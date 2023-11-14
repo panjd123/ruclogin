@@ -19,7 +19,6 @@ setup(
         "docopt",
         "Pillow==9.5.0",
     ],
-    python_requires="<=3.11",
     package_data={"ruclogin": ["config.ini"]},
     entry_points={
         "console_scripts": [
