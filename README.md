@@ -4,6 +4,14 @@ A package for obtaining and checking v.ruc.edu.cn **cookies** using selenium (he
 
 ## Get Started
 
+### 0. Install ruclogin
+
+```bash
+git clone https://github.com/panjd123/ruclogin.git
+cd ruclogin
+pip install .
+```
+
 ### 1. Install Chrome or Edge
 
 - [Chrome](https://www.google.cn/chrome/)
@@ -51,11 +59,3 @@ cookies = get_cookies()             # cache=True, it will use the cookies obtain
 ```
 
 You only need to update your username and password once, and then you can get cookies at any time.
-
-## Installation
-
-```bash
-git clone https://github.com/panjd123/ruclogin.git
-cd ruclogin
-pip install .
-```
