@@ -2,5 +2,5 @@ build
 *.egg-info
 __pycache__
 *_cookies.pkl
-ruclogin/config.ini
 dist
+distribution.txt
