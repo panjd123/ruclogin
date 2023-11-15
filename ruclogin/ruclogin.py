@@ -97,7 +97,7 @@ class RUC_LOGIN:
             chromium_options.add_experimental_option(
                 "excludeSwitches", ["enable-logging"]
             )
-            self.driver = webdriver.Chromium(
+            self.driver = webdriver.Chrome(
                 options=chromium_options,
                 service=ChromeService(
                     ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
