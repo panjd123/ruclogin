@@ -264,7 +264,6 @@ def get_cookies(cache=True, domain="v") -> dict:
     if cache:
         if osp.exists(cache_path):
             cookies = pickle.load(open(cache_path, "rb"))
-            print(cookies)
             if check_cookies(cookies, domain):
                 return cookies
     if loginer_instance is None:
@@ -276,7 +275,7 @@ def get_cookies(cache=True, domain="v") -> dict:
     return cookies
 
 
-def check_cookies(cookies, domain="v") -> bool:
+def check_cookies(cookies, domain="v"):
     """Check if cookies are valid.
 
     Args:
@@ -285,26 +284,21 @@ def check_cookies(cookies, domain="v") -> bool:
         domain (str, optional): "v", "jw", "v.ruc.edu.cn", "jw.ruc.edu.cn". Defaults to "v".
 
     Returns:
-        bool: True if valid, False if invalid(or expired).
+        optional[str]: None if cookies are invalid, else a greeting message.
     """
     try:
         if domain.startswith("v"):
-            response = requests.get("https://v.ruc.edu.cn/me#/", cookies=cookies)
-            begin = response.text.find("<title>")
-            end = response.text.find("</title>")
-            title = response.text[begin + 7 : end].replace("\n", "").replace("\r", "")
-            if title == "登录 - 中国人民大学":
-                return False
-            elif title == "微人大":
-                return True
-            else:
-                assert False
+            response = requests.get(
+                "https://v.ruc.edu.cn/v3/api/me/roles", cookies=cookies
+            )
+            role = response.json()["data"][-1]
+            return f"你好, {role['departmentname']} {role['username']}"
         elif domain.startswith("jw"):
             response = requests.post(
-                "https://jw.ruc.edu.cn/resService/jwxtpt/v1/xsd/xjgl_public/findXkResult",
+                "https://jw.ruc.edu.cn/resService/jwxtpt/v1/xsd/xsdqxxkb_info/searchOneXskbList",
                 params={
-                    "resourceCode": "XSMH0313",
-                    "apiCode": "jw.xsd.xsdInfo.controller.XsdPublicController.findXkResult",
+                    "resourceCode": "XSMH0701",
+                    "apiCode": "jw.xsd.xsdInfo.controller.XsdQxxkbController.searchOneXskbList",
                 },
                 cookies={"SESSION": cookies["SESSION"]},
                 headers={
@@ -313,17 +307,13 @@ def check_cookies(cookies, domain="v") -> bool:
                 },
                 json={
                     "jczy013id": "2023-2024-1",
+                    "pkgl002id": "c134b10e0000WH",
                 },
             )
-            j = response.json()
-            msg = j["errorMessage"]
-            print(j["data"])
-            if msg == "success":
-                return True
-            else:
-                return False
+            d = response.json()["data"]
+            return "你这学期的课有：" + " ".join(set([kc["kc_name"] for kc in d]))
     except:
-        return False
+        return None
 
 
 def update_username_and_password(username: str, password: str):
@@ -339,8 +329,13 @@ def update_username_and_password(username: str, password: str):
         config["base"]["username"] = username
     if password:
         config["base"]["password"] = password
-    with open(INI_PATH, "w", encoding="utf-8") as f:
-        config.write(f)
+    if username or password:
+        with open(INI_PATH, "w", encoding="utf-8") as f:
+            config.write(f)
+        if osp.exists(osp.join(ROOT, "jw_cookies.pkl")):
+            os.remove(osp.join(ROOT, "jw_cookies.pkl"))
+        if osp.exists(osp.join(ROOT, "v_cookies.pkl")):
+            os.remove(osp.join(ROOT, "v_cookies.pkl"))
 
 
 def get_username_and_password():
@@ -382,20 +377,32 @@ Options:
     password = args["--password"] or input("password, type enter to skip: ")
     update_username_and_password(username, password)
     update_browser(browser)
-    print("Config {} updated:".format(INI_PATH))
+    print("\nConfig {} updated:".format(INI_PATH))
     print(
-        "Username: {}\nPassword: {}\nBrowser: {}".format(
+        "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}".format(
             config["base"]["username"],
             config["base"]["password"],
             config["base"]["browser"],
         )
     )
+    print("\n")
+    isTest = input("Test login? (Y/n): \n")
+    if isTest.lower() in ["y", "yes", ""]:
+        try:
+            v_cookies = get_cookies(domain="v")
+            v_msg = check_cookies(v_cookies, domain="v")
+            jw_cookies = get_cookies(domain="jw")
+            jw_msg = check_cookies(jw_cookies, domain="jw")
+            print(v_msg, "from v.ruc.edu.cn")
+            print(jw_msg, "from jw.ruc.edu.cn")
+        except:
+            print("Login failed")
 
 
 if __name__ == "__main__":
-    # main()
-    domain = "v"
-    cookies = get_cookies(cache=False, domain=domain)
-    print(cookies)
-    success = check_cookies(cookies, domain=domain)
-    print(success)
+    main()
+    # domain = "v"
+    # cookies = get_cookies(cache=False, domain=domain)
+    # print(cookies)
+    # success = check_cookies(cookies, domain=domain)
+    # print(success)
