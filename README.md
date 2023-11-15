@@ -4,18 +4,31 @@ ruclogin is a package for obtaining and checking v.ruc.edu.cn (and jw.ruc.edu.cn
 
 ruclogin 可以帮助你快速地获取和检查 v.ruc.edu.cn (和 jw.ruc.edu.cn) 的 cookies，使用 selenium 和 requests。
 
+[PyPI](https://pypi.org/project/ruclogin/)
+
 ## Simple Example
 
 ```python
 import ruclogin
 ruclogin.update_username_and_password("2021201212", "ABC12345")
-cookies = ruclogin.get_cookies(domain="v.ruc.edu.cn")
+cookies = ruclogin.get_cookies(domain="v.ruc.edu.cn") # you can also use domain="jw.ruc.edu.cn"
+cookies
 # {'tiup_uid': '6112329b90f4d162e19b83c9', 'session': '7a0b09dc5f5c4587aae0511247ae276d.834554d714de4c19b6ca1ec111ab3514', 'access_token': '1Jf8zOE7S5SYHYS3x5nNHA', 'is_simple': '1'}
 ```
 
 ## Get Started
 
 ### 0. Install ruclogin
+
+Now you can simply install ruclogin using pip.
+
+```bash
+pip install ruclogin
+```
+
+If you are worried about security issues, you can also install ruclogin from source code.
+
+如果你担心安全问题，你也可以从源码安装 ruclogin。
 
 ```bash
 git clone https://github.com/panjd123/ruclogin.git
@@ -70,6 +83,8 @@ cookies = get_cookies()             # cache=True, it will use the cookies obtain
 ```
 
 You only need to update your username and password once, and then you can get cookies at any time.
+
+无论用什么方式设置用户名和密码，你只需要设置一次。
 
 ## Update
 
