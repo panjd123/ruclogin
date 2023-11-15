@@ -42,8 +42,6 @@ pip install .
 - [Edge](https://www.microsoft.com/zh-cn/edge)
 - [Chromium](https://chromium.woolyss.com/download/zh/)
 
-If your program is running on a server, try `apt install chromium-browser` or `yum install chromium`.
-
 ### 2. Set your username, password and preferred browser in terminal
 
 ```bash
@@ -101,3 +99,6 @@ cookies = get_cookies(domain="jw") # or get_cookies(domain="jw.ruc.edu.cn")
 print(check_cookies(cookies, domain="jw")) # True
 ```
 
+#### 0.2.1 Update
+
+提高 check_cookies 的鲁棒性。

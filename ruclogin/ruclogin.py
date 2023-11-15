@@ -84,7 +84,7 @@ class RUC_LOGIN:
                 service=EdgeService(EdgeChromiumDriverManager().install()),
             )
         elif browser == "Chromium":
-            chromium_options = webdriver.ChromiumOptions()
+            chromium_options = webdriver.ChromeOptions()
             chromium_options.add_argument("--headless=new")
             chromium_options.add_argument("start-maximized")
             chromium_options.add_argument("--disable-gpu")
@@ -264,6 +264,7 @@ def get_cookies(cache=True, domain="v") -> dict:
     if cache:
         if osp.exists(cache_path):
             cookies = pickle.load(open(cache_path, "rb"))
+            print(cookies)
             if check_cookies(cookies, domain):
                 return cookies
     if loginer_instance is None:
@@ -286,9 +287,9 @@ def check_cookies(cookies, domain="v") -> bool:
     Returns:
         bool: True if valid, False if invalid(or expired).
     """
-    if domain.startswith("v"):
-        response = requests.get("https://v.ruc.edu.cn/me#/", cookies=cookies)
-        try:
+    try:
+        if domain.startswith("v"):
+            response = requests.get("https://v.ruc.edu.cn/me#/", cookies=cookies)
             begin = response.text.find("<title>")
             end = response.text.find("</title>")
             title = response.text[begin + 7 : end].replace("\n", "").replace("\r", "")
@@ -298,31 +299,31 @@ def check_cookies(cookies, domain="v") -> bool:
                 return True
             else:
                 assert False
-        except:
-            return False
-    elif domain.startswith("jw"):
-        response = requests.post(
-            "https://jw.ruc.edu.cn/resService/jwxtpt/v1/xsd/xjgl_public/findXkResult",
-            params={
-                "resourceCode": "XSMH0313",
-                "apiCode": "jw.xsd.xsdInfo.controller.XsdPublicController.findXkResult",
-            },
-            cookies={"SESSION": cookies["SESSION"]},
-            headers={
-                "Accept": "application/json, text/plain, */*",
-                "TOKEN": cookies["token"],
-            },
-            json={
-                "jczy013id": "2023-2024-1",
-            },
-        )
-        j = response.json()
-        msg = j["errorMessage"]
-        print(j["data"])
-        if msg == "success":
-            return True
-        else:
-            return False
+        elif domain.startswith("jw"):
+            response = requests.post(
+                "https://jw.ruc.edu.cn/resService/jwxtpt/v1/xsd/xjgl_public/findXkResult",
+                params={
+                    "resourceCode": "XSMH0313",
+                    "apiCode": "jw.xsd.xsdInfo.controller.XsdPublicController.findXkResult",
+                },
+                cookies={"SESSION": cookies["SESSION"]},
+                headers={
+                    "Accept": "application/json, text/plain, */*",
+                    "TOKEN": cookies["token"],
+                },
+                json={
+                    "jczy013id": "2023-2024-1",
+                },
+            )
+            j = response.json()
+            msg = j["errorMessage"]
+            print(j["data"])
+            if msg == "success":
+                return True
+            else:
+                return False
+    except:
+        return False
 
 
 def update_username_and_password(username: str, password: str):
@@ -394,7 +395,7 @@ Options:
 if __name__ == "__main__":
     # main()
     domain = "v"
-    cookies = get_cookies(domain=domain)
+    cookies = get_cookies(cache=False, domain=domain)
     print(cookies)
     success = check_cookies(cookies, domain=domain)
     print(success)
