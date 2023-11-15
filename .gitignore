@@ -3,3 +3,4 @@ build
 __pycache__
 *_cookies.pkl
 ruclogin/config.ini
+dist

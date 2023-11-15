@@ -10,7 +10,7 @@ setup(
     author="panjd123",
     author_email="xm.jarden@gmail.con",
     license="MIT",
-    url="https://github.com/panjd123",
+    url="https://github.com/panjd123/ruclogin",
     install_requires=[
         "requests",
         "selenium",
