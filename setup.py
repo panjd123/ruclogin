@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name="ruclogin",
-    version="0.1",
+    version="0.2",
     packages=find_packages(),
-    description="Login to v.ruc.edu.cn, get cookies.",
-    long_description=open("README.md").read(),
+    description="Login to *.ruc.edu.cn, get cookies.",
+    long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     author="panjd123",
     author_email="xm.jarden@gmail.con",
@@ -14,6 +14,7 @@ setup(
     install_requires=[
         "requests",
         "selenium",
+        "selenium-wire",
         "webdriver_manager",
         "ddddocr",
         "docopt",

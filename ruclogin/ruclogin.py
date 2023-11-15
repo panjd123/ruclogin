@@ -1,4 +1,5 @@
-from selenium import webdriver
+# from selenium import webdriver
+import seleniumwire.webdriver as webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.common.exceptions import StaleElementReferenceException
@@ -15,12 +16,10 @@ import os.path as osp
 import configparser
 import requests
 import pickle
-from timeit import default_timer as timer
 import docopt
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 INI_PATH = osp.join(ROOT, "config.ini")
-CACHE_PATH = osp.join(ROOT, "cache.pkl")
 
 loginer_instance = None
 config = configparser.ConfigParser()
@@ -86,13 +85,17 @@ class RUC_LOGIN:
         else:
             raise ValueError("browser must be Chrome or Edge")
 
-    def initial_login(self):
+    def initial_login(self, domain: str):
         global config
         config.read(INI_PATH, encoding="utf-8")
         self.username = config["base"]["username"]
         self.password = config["base"]["password"]
         self.enableLogging = config["base"].getboolean("enableLogging")
-        self.driver.get("https://v.ruc.edu.cn/auth/login")
+        if domain.startswith("v"):
+            url = r"https://v.ruc.edu.cn/auth/login"
+        else:
+            url = r"https://v.ruc.edu.cn/auth/login?&proxy=true&redirect_uri=https%3A%2F%2Fv.ruc.edu.cn%2Foauth2%2Fauthorize%3Fresponse_type%3Dcode%26scope%3Dall%26state%3Dyourstate%26client_id%3D5d25ae5b90f4d14aa601ede8.ruc%26redirect_uri%3Dhttp%3A%2F%2Fjw.ruc.edu.cn%2FsecService%2Foauthlogin"
+        self.driver.get(url)
         self.usernameInput = self.driver.find_element(
             By.XPATH, "/html/body/div/form/div[3]/input"
         )
@@ -111,6 +114,9 @@ class RUC_LOGIN:
         self.login_alter = self.driver.find_element(
             By.XPATH, "/html/body/div/form/div[11]"
         )
+        self.rememberMe = self.driver.find_element(
+            By.XPATH, "/html/body/div/form/div[13]/span[1]/div"
+        ).click()
         self.lst_img = None
         self.lst_status = self.current_status()
 
@@ -183,15 +189,34 @@ class RUC_LOGIN:
             raise ValueError(status_msg)
         return True
 
-    def get_cookies(self):
-        raw_cookies = self.driver.get_cookies()
-        cookies = {cookie["name"]: cookie["value"] for cookie in raw_cookies}
-        try:
-            cookies.pop("is_simple")
-            cookies.pop("session")
-        except:
-            print(cookies)
-        return cookies
+    def get_cookies(self, domain="v"):
+        if domain.startswith("v"):
+            raw_cookies = self.driver.get_cookies()
+            cookies = {cookie["name"]: cookie["value"] for cookie in raw_cookies}
+            return cookies
+        elif domain.startswith("jw"):
+            [
+                self.driver.wait_for_request(
+                    url,
+                    timeout=10,
+                )
+                for url in [
+                    "/Njw2017/index.html*",
+                    "/secService/oauthlogin*",
+                ]
+            ]
+            cookies = {}
+            for request in self.driver.requests:
+                if request.response:
+                    cookie_header = request.response.headers["Set-Cookie"]
+                    if cookie_header:
+                        cookies.update(
+                            {
+                                cookie.split("=")[0]: cookie.split("=")[1].split(";")[0]
+                                for cookie in cookie_header.split(", ")
+                            }
+                        )
+            return cookies
 
     def login(self):
         for _ in range(10):
@@ -200,56 +225,83 @@ class RUC_LOGIN:
                 return
         raise TimeoutError("Login failed")
 
-    def login_and_get_cookies(self):
-        self.initial_login()
-        self.login()
-        return self.get_cookies()
 
-
-def get_cookies(cache=True) -> dict:
+def get_cookies(cache=True, domain="v") -> dict:
     """Get cookies from cache or selenium login.
 
     Args:
         cache (bool, optional): Force regain when set to False. Defaults to True.
 
+        domain (str, optional): "v", "jw", "v.ruc.edu.cn", "jw.ruc.edu.cn". Defaults to "v".
+
     Returns:
         dict: Like {'tiup_uid': '6112329b90f4d162e19b83c9', 'access_token': 'rhMSVympSBON2Xr8yAdhnQ'}
     """
     global loginer_instance
+    domain = domain.split(".")[0]
+    cache_path = osp.join(ROOT, f"{domain}_cookies.pkl")
     if cache:
-        if osp.exists(CACHE_PATH):
-            cookies = pickle.load(open(CACHE_PATH, "rb"))
-            if check_cookies(cookies):
+        if osp.exists(cache_path):
+            cookies = pickle.load(open(cache_path, "rb"))
+            if check_cookies(cookies, domain):
                 return cookies
     if loginer_instance is None:
         loginer_instance = RUC_LOGIN()
-    cookies = loginer_instance.login_and_get_cookies()
-    pickle.dump(cookies, open(CACHE_PATH, "wb"))
+    loginer_instance.initial_login(domain)
+    loginer_instance.login()
+    cookies = loginer_instance.get_cookies(domain)
+    pickle.dump(cookies, open(cache_path, "wb"))
     return cookies
 
 
-def check_cookies(cookies) -> bool:
+def check_cookies(cookies, domain="v") -> bool:
     """Check if cookies are valid.
 
     Args:
         cookies (dict): Like {'tiup_uid': '6112329b90f4d162e19b83c9', 'access_token': 'rhMSVympSBON2Xr8yAdhnQ'}
 
+        domain (str, optional): "v", "jw", "v.ruc.edu.cn", "jw.ruc.edu.cn". Defaults to "v".
+
     Returns:
         bool: True if valid, False if invalid(or expired).
     """
-    response = requests.get("https://v.ruc.edu.cn/me#/", cookies=cookies)
-    try:
-        begin = response.text.find("<title>")
-        end = response.text.find("</title>")
-        title = response.text[begin + 7 : end].replace("\n", "").replace("\r", "")
-        if title == "登录 - 中国人民大学":
+    if domain.startswith("v"):
+        response = requests.get("https://v.ruc.edu.cn/me#/", cookies=cookies)
+        try:
+            begin = response.text.find("<title>")
+            end = response.text.find("</title>")
+            title = response.text[begin + 7 : end].replace("\n", "").replace("\r", "")
+            if title == "登录 - 中国人民大学":
+                return False
+            elif title == "微人大":
+                return True
+            else:
+                assert False
+        except:
             return False
-        elif title == "微人大":
+    elif domain.startswith("jw"):
+        response = requests.post(
+            "https://jw.ruc.edu.cn/resService/jwxtpt/v1/xsd/xjgl_public/findXkResult",
+            params={
+                "resourceCode": "XSMH0313",
+                "apiCode": "jw.xsd.xsdInfo.controller.XsdPublicController.findXkResult",
+            },
+            cookies={"SESSION": cookies["SESSION"]},
+            headers={
+                "Accept": "application/json, text/plain, */*",
+                "TOKEN": cookies["token"],
+            },
+            json={
+                "jczy013id": "2023-2024-1",
+            },
+        )
+        j = response.json()
+        msg = j["errorMessage"]
+        print(j["data"])
+        if msg == "success":
             return True
         else:
-            assert False
-    except:
-        return False
+            return False
 
 
 def update_username_and_password(username: str, password: str):
@@ -317,4 +369,9 @@ Options:
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    domain = "v"
+    cookies = get_cookies(domain=domain)
+    print(cookies)
+    success = check_cookies(cookies, domain=domain)
+    print(success)

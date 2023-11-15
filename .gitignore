@@ -1,4 +1,5 @@
 build
 *.egg-info
 __pycache__
-cache.pkl
+*_cookies.pkl
+ruclogin/config.ini
