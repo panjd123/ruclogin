@@ -36,10 +36,13 @@ cd ruclogin
 pip install .
 ```
 
-### 1. Install Chrome or Edge
+### 1. Install Chrome, Edge or Chromium
 
 - [Chrome](https://www.google.cn/chrome/)
 - [Edge](https://www.microsoft.com/zh-cn/edge)
+- [Chromium](https://chromium.woolyss.com/download/zh/)
+
+If your program is running on a server, try `apt install chromium-browser` or `yum install chromium`.
 
 ### 2. Set your username, password and preferred browser in terminal
 
@@ -57,7 +60,7 @@ and then type your username, password and preferred browser in terminal.
 
 ```
 (base) PS D:\Code\campus\ruclogin> ruclogin
-browser(Chrome/Edge), type enter to skip: Chrome
+browser(Chrome/Edge/Chormium), type enter to skip: Chrome
 username, type enter to skip: 2021201212
 password, type enter to skip: 
 Config D:\Program\anaconda3\Lib\site-packages\ruclogin\config.ini updated:

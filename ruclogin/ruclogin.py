@@ -5,6 +5,7 @@ from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.common.exceptions import StaleElementReferenceException
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
+from webdriver_manager.core.os_manager import ChromeType
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from time import sleep
@@ -82,8 +83,28 @@ class RUC_LOGIN:
                 options=edge_options,
                 service=EdgeService(EdgeChromiumDriverManager().install()),
             )
+        elif browser == "Chromium":
+            chromium_options = webdriver.ChromiumOptions()
+            chromium_options.add_argument("--headless=new")
+            chromium_options.add_argument("start-maximized")
+            chromium_options.add_argument("--disable-gpu")
+            chromium_options.add_argument("--no-sandbox")
+            chromium_options.add_argument("--disable-dev-shm-usage")
+            chromium_options.add_argument("--disable-extensions")
+            chromium_options.add_argument("--disable-infobars")
+            chromium_options.add_argument("--disable-logging")
+            chromium_options.add_argument("--silent")
+            chromium_options.add_experimental_option(
+                "excludeSwitches", ["enable-logging"]
+            )
+            self.driver = webdriver.Chromium(
+                options=chromium_options,
+                service=ChromeService(
+                    ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
+                ),
+            )
         else:
-            raise ValueError("browser must be Chrome or Edge")
+            raise ValueError("browser must be Chrome, Edge or Chromium")
 
     def initial_login(self, domain: str):
         global config
@@ -346,14 +367,16 @@ def main():
     ruclogin [--browser=<browser>] [--username=<username>] [--password=<password>]
     
 Options:
-    --browser=<browser>     browser(Chrome/Edge)
+    --browser=<browser>     browser(Chrome/Edge/Chromium)
     --username=<username>   username
     --password=<password>   password
     """
     args = docopt.docopt(usage)
-    browser = args["--browser"] or input("browser(Chrome/Edge), type enter to skip: ")
-    if browser not in ["Chrome", "Edge", ""]:
-        raise ValueError("browser must be Chrome or Edge")
+    browser = args["--browser"] or input(
+        "browser(Chrome/Edge/Chromium), type enter to skip: "
+    )
+    if browser not in ["Chrome", "Edge", "Chromium", ""]:
+        raise ValueError("browser must be Chrome, Edge or Chromium")
     username = args["--username"] or input("username, type enter to skip: ")
     password = args["--password"] or input("password, type enter to skip: ")
     update_username_and_password(username, password)
