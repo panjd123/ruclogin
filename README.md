@@ -4,7 +4,7 @@ ruclogin is a package for obtaining and checking [v.ruc.edu.cn](v.ruc.edu.cn) (a
 
 ruclogin 可以帮助你快速地获取和检查 [v.ruc.edu.cn](v.ruc.edu.cn) (and [jw.ruc.edu.cn](jw.ruc.edu.cn)) 的 cookies，使用 selenium 和 requests。可能的用途包括抢课等。
 
-[PyPI](https://pypi.org/project/ruclogin/) | [GitHub](https:://github.com/panjd123/ruclogin)
+[PyPI](https://pypi.org/project/ruclogin/) | [GitHub](https://github.com/panjd123/ruclogin)
 
 ## Simple Example
 
