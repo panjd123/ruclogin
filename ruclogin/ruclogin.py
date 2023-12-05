@@ -3,6 +3,7 @@ import seleniumwire.webdriver as webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.common.exceptions import StaleElementReferenceException
+from requests.exceptions import ConnectionError
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from webdriver_manager.core.os_manager import ChromeType
@@ -48,61 +49,65 @@ class RUC_LOGIN:
         global config
         config.read(INI_PATH, encoding="utf-8")
         browser = config["base"]["browser"]
+        driver_path = config["base"]["driver"]
+
+        def get_options(options):
+            options.add_argument("--headless=new")
+            options.add_argument("start-maximized")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--disable-extensions")
+            options.add_argument("--disable-infobars")
+            options.add_argument("--disable-logging")
+            options.add_argument("--silent")
+            options.add_experimental_option("excludeSwitches", ["enable-logging"])
+            return options
 
         if browser == "Chrome":
-            chrome_options = webdriver.ChromeOptions()
-            chrome_options.add_argument("--headless=new")
-            chrome_options.add_argument("start-maximized")
-            chrome_options.add_argument("--disable-gpu")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-            chrome_options.add_argument("--disable-extensions")
-            chrome_options.add_argument("--disable-infobars")
-            chrome_options.add_argument("--disable-logging")
-            chrome_options.add_argument("--silent")
-            chrome_options.add_experimental_option(
-                "excludeSwitches", ["enable-logging"]
-            )
-            self.driver = webdriver.Chrome(
-                options=chrome_options,
-                service=ChromeService(ChromeDriverManager().install()),
-            )
+            options = get_options(webdriver.ChromeOptions())
+            try:
+                self.driver = webdriver.Chrome(
+                    options=options,
+                    service=ChromeService(ChromeDriverManager().install()),
+                )
+            except ConnectionError as e:
+                if not osp.exists(driver_path):
+                    raise e
+                self.driver = webdriver.Chrome(
+                    options=options,
+                    service=ChromeService(executable_path=driver_path),
+                )
         elif browser == "Edge":
-            edge_options = webdriver.EdgeOptions()
-            edge_options.add_argument("--headless=new")
-            edge_options.add_argument("start-maximized")
-            edge_options.add_argument("--disable-gpu")
-            edge_options.add_argument("--no-sandbox")
-            edge_options.add_argument("--disable-dev-shm-usage")
-            edge_options.add_argument("--disable-extensions")
-            edge_options.add_argument("--disable-infobars")
-            edge_options.add_argument("--disable-logging")
-            edge_options.add_argument("--silent")
-            edge_options.add_experimental_option("excludeSwitches", ["enable-logging"])
-            self.driver = webdriver.Edge(
-                options=edge_options,
-                service=EdgeService(EdgeChromiumDriverManager().install()),
-            )
+            options = get_options(webdriver.EdgeOptions())
+            try:
+                self.driver = webdriver.Edge(
+                    options=options,
+                    service=EdgeService(EdgeChromiumDriverManager().install()),
+                )
+            except ConnectionError as e:
+                if not osp.exists(driver_path):
+                    raise e
+                self.driver = webdriver.Edge(
+                    options=options,
+                    service=EdgeService(executable_path=driver_path),
+                )
         elif browser == "Chromium":
-            chromium_options = webdriver.ChromeOptions()
-            chromium_options.add_argument("--headless=new")
-            chromium_options.add_argument("start-maximized")
-            chromium_options.add_argument("--disable-gpu")
-            chromium_options.add_argument("--no-sandbox")
-            chromium_options.add_argument("--disable-dev-shm-usage")
-            chromium_options.add_argument("--disable-extensions")
-            chromium_options.add_argument("--disable-infobars")
-            chromium_options.add_argument("--disable-logging")
-            chromium_options.add_argument("--silent")
-            chromium_options.add_experimental_option(
-                "excludeSwitches", ["enable-logging"]
-            )
-            self.driver = webdriver.Chrome(
-                options=chromium_options,
-                service=ChromeService(
-                    ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
-                ),
-            )
+            options = get_options(webdriver.ChromeOptions())
+            try:
+                self.driver = webdriver.Chrome(
+                    options=options,
+                    service=ChromeService(
+                        ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
+                    ),
+                )
+            except ConnectionError as e:
+                if not osp.exists(driver_path):
+                    raise e
+                self.driver = webdriver.Chrome(
+                    options=options,
+                    service=ChromeService(executable_path=driver_path),
+                )
         else:
             raise ValueError("browser must be Chrome, Edge or Chromium")
 
@@ -208,6 +213,7 @@ class RUC_LOGIN:
         elif status_msg == "用户不存在！" or status_msg == "用户名或密码不正确,请重试！":
             print("username: {}, password: {}".format(self.username, self.password))
             raise ValueError(status_msg)
+        print(status_msg)
         return True
 
     def get_cookies(self, domain="v"):
@@ -271,6 +277,8 @@ def get_cookies(cache=True, domain="v") -> dict:
     loginer_instance.initial_login(domain)
     loginer_instance.login()
     cookies = loginer_instance.get_cookies(domain)
+    if not cookies:
+        raise ValueError("Login failed")
     pickle.dump(cookies, open(cache_path, "wb"))
     return cookies
 
@@ -349,23 +357,26 @@ def get_username_and_password():
     return config["base"]["username"], config["base"]["password"]
 
 
-def update_browser(browser):
+def update_other(browser=None, driver_path=None):
     global config
     config.read(INI_PATH, encoding="utf-8")
     if browser:
         config["base"]["browser"] = browser
+    if driver_path:
+        config["base"]["driver"] = driver_path
     with open(INI_PATH, "w", encoding="utf-8") as f:
         config.write(f)
 
 
 def main():
     usage = r"""Usage:
-    ruclogin [--browser=<browser>] [--username=<username>] [--password=<password>]
+    ruclogin [--browser=<browser>] [--username=<username>] [--password=<password>] [--driver=<driver_path>]
     
 Options:
     --browser=<browser>     browser(Chrome/Edge/Chromium)
     --username=<username>   username
     --password=<password>   password
+    --driver=<driver_path>  driver_path
     """
     args = docopt.docopt(usage)
     browser = args["--browser"] or input(
@@ -375,18 +386,20 @@ Options:
         raise ValueError("browser must be Chrome, Edge or Chromium")
     username = args["--username"] or input("username, type enter to skip: ")
     password = args["--password"] or input("password, type enter to skip: ")
+    driver_path = args["--driver"] or input("driver_path, type enter to skip: ")
     update_username_and_password(username, password)
-    update_browser(browser)
+    update_other(browser, driver_path)
     print("\nConfig {} updated:".format(INI_PATH))
     print(
-        "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}".format(
+        "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}\n\tdriver_path: {}".format(
             config["base"]["username"],
             config["base"]["password"],
             config["base"]["browser"],
+            config["base"]["driver"],
         )
     )
     print("\n")
-    isTest = input("Test login? (Y/n): \n")
+    isTest = input("Test login? (Y/n): ")
     if isTest.lower() in ["y", "yes", ""]:
         try:
             v_cookies = get_cookies(domain="v")
@@ -395,7 +408,8 @@ Options:
             jw_msg = check_cookies(jw_cookies, domain="jw")
             print(v_msg, "from v.ruc.edu.cn")
             print(jw_msg, "from jw.ruc.edu.cn")
-        except:
+        except Exception as e:
+            print(e)
             print("Login failed")
 
 

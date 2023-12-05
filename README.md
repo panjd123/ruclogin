@@ -57,21 +57,26 @@ ruclogin
 and then type your username, password and preferred browser in terminal.
 
 ```
-(base) PS D:\Code\campus\ruclogin> ruclogin
-browser(Chrome/Edge/Chormium), type enter to skip: Chrome
-username, type enter to skip: 2021201212
-password, type enter to skip: 
+(base) PS D:\Code\ruclogin> ruclogin     
+username, type enter to skip:
+password, type enter to skip:
+driver_path, type enter to skip:
 
 Config D:\Program\anaconda3\Lib\site-packages\ruclogin\config.ini updated:
-    Username: 2021201212
-    Password: ABC12345
-    Browser: Chrome
+        Username: 2021201212
+        Password: ABC12345
+        Browser: Chrome
+        driver_path: D:/Other/driver/chromedriver.exe
+
 
 Test login? (Y/n):
-
 你好, 信息学院 xxx from v.ruc.edu.cn
 你这学期的课有：并行与分布式计算 计算机系统实现Ⅰ 后人类时代的全球影像 机器学习与计算智能Ⅰ 数据库系统概论荣誉课程 迁移学习 科学技术哲学 from jw.ruc.edu.cn
 ```
+
+> Q: 我在这一步遇到报错 `Could not reach host. Are you offline?`
+>
+> A: 你可以尝试开启网络代理，或者手动包管理，即将浏览器的驱动手动下载到你的主机上，然后重新更新配置 `ruclogin --driver D:/Other/driver/chromedriver.exe`
 
 ### 3. Get your cookies
 
@@ -113,3 +118,9 @@ check_cookies(cookies, domain="jw")
 #### 0.2.3 Update
 
 修改了 check_cookies 的输出，现在会输出所用测试请求的结果例如：“你这学期的课有：并行与分布式计算 计算机系统实现Ⅰ 后人类时代的全球影像 机器学习与计算智能Ⅰ 数据库系统概论荣誉课程 迁移学习 科学技术哲学”，似乎更有趣一点。
+
+#### 0.2.5 Update
+
+支持了手动管理浏览器驱动
+
+删去了 ruclogin test 时请求用户输入前的额外换行。
