@@ -26,9 +26,9 @@ Now you can simply install ruclogin using pip.
 pip install ruclogin
 ```
 
-If you are worried about security issues, you can also install ruclogin from source code.
+You can also install ruclogin from source code.
 
-如果你担心安全问题，你也可以从源码安装 ruclogin。
+你也可以从源码安装最新版。
 
 ```bash
 git clone https://github.com/panjd123/ruclogin.git
