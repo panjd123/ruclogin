@@ -213,7 +213,6 @@ class RUC_LOGIN:
         elif status_msg == "用户不存在！" or status_msg == "用户名或密码不正确,请重试！":
             print("username: {}, password: {}".format(self.username, self.password))
             raise ValueError(status_msg)
-        print(status_msg)
         return True
 
     def get_cookies(self, domain="v"):
