@@ -19,12 +19,39 @@ import configparser
 import requests
 import pickle
 import docopt
+import onnxruntime
+from timeit import default_timer as timer
+
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 INI_PATH = osp.join(ROOT, "config.ini")
 
 loginer_instance = None
 config = configparser.ConfigParser()
+
+onnxruntime.set_default_logger_severity(3)
+
+
+def gen_semester_codes():
+    now_year = datetime.datetime.now().year
+    codes = [
+        f"{y-1}-{y}-{s}"
+        for y in [now_year - 3, now_year - 2, now_year - 1, now_year]
+        for s in [1, 2, 4]
+    ]
+    return ",".join(codes)
+
+
+def semester2code(text="2023-2024学年春季学期"):
+    y = text[:9]
+    s = "春夏秋冬".index(text[11]) + 1
+    return f"{y}-{s}"
+
+
+def code2semester(code="2023-2024-1"):
+    y = code[:9]
+    s = int(code[10])
+    return f"{y}学年{'春夏秋冬'[s-1]}季学期"
 
 
 class RUC_LOGIN:
@@ -61,6 +88,8 @@ class RUC_LOGIN:
             options.add_argument("--disable-infobars")
             options.add_argument("--disable-logging")
             options.add_argument("--silent")
+            options.add_argument("--log-level=3")
+            options.add_experimental_option("detach", True)
             options.add_experimental_option("excludeSwitches", ["enable-logging"])
             return options
 
@@ -212,7 +241,7 @@ class RUC_LOGIN:
             return False
         elif status_msg == "用户不存在！" or status_msg == "用户名或密码不正确,请重试！":
             print("username: {}, password: {}".format(self.username, self.password))
-            raise ValueError(status_msg)
+            raise ValueError("Login failed, status msg from website: " + status_msg)
         return True
 
     def get_cookies(self, domain="v"):
@@ -245,14 +274,20 @@ class RUC_LOGIN:
             return cookies
 
     def login(self):
-        for _ in range(10):
+        for _ in range(20):
             success = self.try_login()
             if success:
                 return
-        raise TimeoutError("Login failed")
+        raise TimeoutError("Login failed, try too many times")
 
 
-def get_cookies(cache=True, domain="v") -> dict:
+def driver_init():
+    global loginer_instance
+    if loginer_instance is None:
+        loginer_instance = RUC_LOGIN()
+
+
+def get_cookies(cache=True, domain="v", retry=3) -> dict:
     """Get cookies from cache or selenium login.
 
     Args:
@@ -277,7 +312,14 @@ def get_cookies(cache=True, domain="v") -> dict:
     loginer_instance.login()
     cookies = loginer_instance.get_cookies(domain)
     if not cookies:
-        raise ValueError("Login failed")
+        for _ in range(retry):
+            loginer_instance.initial_login(domain)
+            loginer_instance.login()
+            cookies = loginer_instance.get_cookies(domain)
+            if cookies:
+                break
+        if not cookies:
+            raise ValueError("Login failed, cookies are empty, please try again")
     pickle.dump(cookies, open(cache_path, "wb"))
     return cookies
 
@@ -302,23 +344,27 @@ def check_cookies(cookies, domain="v"):
             return f"你好, {role['departmentname']} {role['username']}"
         elif domain.startswith("jw"):
             response = requests.post(
-                "https://jw.ruc.edu.cn/resService/jwxtpt/v1/xsd/xsdqxxkb_info/searchOneXskbList",
+                "https://jw.ruc.edu.cn/resService/jwxtpt/v1/xsd/cjgl_xsxdsq/professionalRankingQuery",
                 params={
-                    "resourceCode": "XSMH0701",
-                    "apiCode": "jw.xsd.xsdInfo.controller.XsdQxxkbController.searchOneXskbList",
+                    "resourceCode": "XSMH0527",
+                    "apiCode": "jw.xsd.xsdInfo.controller.CjglKccjckController.professionalRankingQuery",
                 },
                 cookies={"SESSION": cookies["SESSION"]},
                 headers={
                     "Accept": "application/json, text/plain, */*",
                     "TOKEN": cookies["token"],
                 },
-                json={
-                    "jczy013id": "2023-2024-1",
-                    "pkgl002id": "c134b10e0000WH",
-                },
+                json={"jczy013id": gen_semester_codes()},
             )
-            d = response.json()["data"]
-            return "你这学期的课有：" + " ".join(set([kc["kc_name"] for kc in d]))
+            d = response.json()["data"][0]
+            return "你好，{} {}，你一共修了{}学分，{}门课，平均绩点{}，专业排名第{}名".format(
+                d["ndzy_name"],
+                d["xs_name"],
+                d["sdxf"],
+                d["countnum"],
+                d["pjxfjd"],
+                d["pm"],
+            )
     except:
         return None
 
@@ -369,22 +415,22 @@ def update_other(browser=None, driver_path=None):
 
 def main():
     usage = r"""Usage:
-    ruclogin [--browser=<browser>] [--username=<username>] [--password=<password>] [--driver=<driver_path>]
+    ruclogin [--username=<username>] [--password=<password>] [--browser=<browser>] [--driver=<driver_path>]
     
 Options:
-    --browser=<browser>     browser(Chrome/Edge/Chromium)
     --username=<username>   username
     --password=<password>   password
+    --browser=<browser>     browser(Chrome/Edge/Chromium)
     --driver=<driver_path>  driver_path
     """
     args = docopt.docopt(usage)
+    username = args["--username"] or input("username, type enter to skip: ")
+    password = args["--password"] or input("password, type enter to skip: ")
     browser = args["--browser"] or input(
         "browser(Chrome/Edge/Chromium), type enter to skip: "
     )
     if browser not in ["Chrome", "Edge", "Chromium", ""]:
         raise ValueError("browser must be Chrome, Edge or Chromium")
-    username = args["--username"] or input("username, type enter to skip: ")
-    password = args["--password"] or input("password, type enter to skip: ")
     driver_path = args["--driver"] or input("driver_path, type enter to skip: ")
     update_username_and_password(username, password)
     update_other(browser, driver_path)
@@ -401,12 +447,40 @@ Options:
     isTest = input("Test login? (Y/n): ")
     if isTest.lower() in ["y", "yes", ""]:
         try:
-            v_cookies = get_cookies(domain="v")
+            init_tic = timer()
+            driver_init()
+            init_toc = timer()
+            v_get_tic = timer()
+            v_cookies = get_cookies(domain="v", cache=False)
+            v_get_toc = timer()
+            v_check_tic = timer()
             v_msg = check_cookies(v_cookies, domain="v")
-            jw_cookies = get_cookies(domain="jw")
+            if not v_msg:
+                print(v_cookies)
+                raise RuntimeError("v.ruc.edu.cn cookies are invalid")
+            v_check_toc = timer()
+            jw_get_tic = timer()
+            jw_cookies = get_cookies(domain="jw", cache=False)
+            jw_get_toc = timer()
+            jw_check_tic = timer()
             jw_msg = check_cookies(jw_cookies, domain="jw")
+            if not jw_msg:
+                print(jw_cookies)
+                raise RuntimeError("jw.ruc.edu.cn cookies are invalid")
+            jw_check_toc = timer()
             print(v_msg, "from v.ruc.edu.cn")
             print(jw_msg, "from jw.ruc.edu.cn")
+            print("driver init time: {:.3f}s".format(init_toc - init_tic))
+            print(
+                "v.ruc.edu.cn get cookies time: {:.3f}s, check cookies time: {:.3f}s".format(
+                    v_get_toc - v_get_tic, v_check_toc - v_check_tic
+                )
+            )
+            print(
+                "jw.ruc.edu.cn get cookies time: {:.3f}s, check cookies time: {:.3f}s".format(
+                    jw_get_toc - jw_get_tic, jw_check_toc - jw_check_tic
+                )
+            )
         except Exception as e:
             print(e)
             print("Login failed")
