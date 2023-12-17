@@ -70,7 +70,7 @@ class RUC_LOGIN:
     lst_img: bytes
     lst_status: tuple
 
-    def __init__(self) -> None:
+    def __init__(self, debug=False) -> None:
         self.date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         self.ocr = ddddocr.DdddOcr()
         global config
@@ -79,18 +79,19 @@ class RUC_LOGIN:
         driver_path = config["base"]["driver"]
 
         def get_options(options):
-            options.add_argument("--headless=new")
-            options.add_argument("start-maximized")
-            options.add_argument("--disable-gpu")
-            options.add_argument("--no-sandbox")
-            options.add_argument("--disable-dev-shm-usage")
-            options.add_argument("--disable-extensions")
-            options.add_argument("--disable-infobars")
-            options.add_argument("--disable-logging")
-            options.add_argument("--silent")
-            options.add_argument("--log-level=3")
-            options.add_experimental_option("detach", True)
-            options.add_experimental_option("excludeSwitches", ["enable-logging"])
+            if not debug:
+                options.add_argument("--headless=new")
+                options.add_argument("start-maximized")
+                options.add_argument("--disable-gpu")
+                options.add_argument("--no-sandbox")
+                options.add_argument("--disable-dev-shm-usage")
+                options.add_argument("--disable-extensions")
+                options.add_argument("--disable-infobars")
+                options.add_argument("--disable-logging")
+                options.add_argument("--silent")
+                options.add_argument("--log-level=3")
+                options.add_experimental_option("detach", True)
+                options.add_experimental_option("excludeSwitches", ["enable-logging"])
             return options
 
         if browser == "Chrome":
@@ -308,18 +309,18 @@ def get_cookies(cache=True, domain="v", retry=3) -> dict:
                 return cookies
     if loginer_instance is None:
         loginer_instance = RUC_LOGIN()
-    loginer_instance.initial_login(domain)
-    loginer_instance.login()
-    cookies = loginer_instance.get_cookies(domain)
-    if not cookies:
-        for _ in range(retry):
-            loginer_instance.initial_login(domain)
-            loginer_instance.login()
-            cookies = loginer_instance.get_cookies(domain)
-            if cookies:
-                break
+    try:
+        loginer_instance.initial_login(domain)
+        loginer_instance.login()
+        cookies = loginer_instance.get_cookies(domain)
         if not cookies:
             raise ValueError("Login failed, cookies are empty, please try again")
+    except Exception as e:
+        print(f"retry {retry}:", e)
+        if retry == 1:
+            raise e
+        else:
+            get_cookies(cache=False, domain=domain, retry=retry - 1)
     pickle.dump(cookies, open(cache_path, "wb"))
     return cookies
 
