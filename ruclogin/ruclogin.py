@@ -72,7 +72,7 @@ class RUC_LOGIN:
 
     def __init__(self, debug=False) -> None:
         self.date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        self.ocr = ddddocr.DdddOcr()
+        self.ocr = ddddocr.DdddOcr(show_ad=False)
         global config
         config.read(INI_PATH, encoding="utf-8")
         browser = config["base"]["browser"]
@@ -314,8 +314,8 @@ def get_cookies(cache=True, domain="v", retry=3) -> dict:
         loginer_instance.login()
         cookies = loginer_instance.get_cookies(domain)
         if not cookies:
-            raise ValueError("Login failed, cookies are empty, please try again")
-    except Exception as e:
+            raise RuntimeError("Login failed, cookies are empty, please try again")
+    except RuntimeError as e:
         print(f"retry {retry}:", e)
         if retry == 1:
             raise e

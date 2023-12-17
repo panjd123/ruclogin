@@ -134,4 +134,4 @@ ruclogin test 现在还会输出耗时。
 
 #### 0.2.7 Update
 
-修复部分 bug
+修复部分 bug，通过了服务器运行
