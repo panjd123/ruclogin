@@ -135,3 +135,7 @@ ruclogin test 现在还会输出耗时。
 #### 0.2.7 Update
 
 修复部分 bug，通过了服务器运行
+
+#### 0.2.8 Update
+
+随着 ddddocr 的更新，Pillow 的旧版本要求现在被删去
