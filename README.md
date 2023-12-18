@@ -69,8 +69,8 @@ jw.ruc.edu.cn get cookies time: 1.925s, check cookies time: 0.395s
 > A: 自动获取浏览器驱动需要访问谷歌，你有两个解决方案
 > 1. 开启网络代理
 > 2. 手动包管理，即将浏览器的驱动手动下载到你的主机上，然后指定路径 `ruclogin --driver D:/Other/driver/chromedriver.exe`
->   - [官方 ChromeDriver，包含最新版，需要科学上网](https://googlechromelabs.github.io/chrome-for-testing/)
->   - [国内镜像 ChromeDriver，滞后6个版本，如果你的 Chrome 很久没有更新大概率能在这里找到](https://registry.npmmirror.com/binary.html?path=chromedriver/)
+>   - [官方 ChromeDriver，需要科学上网](https://googlechromelabs.github.io/chrome-for-testing/)
+>   - [淘宝镜像 ChromeDriver](https://registry.npmmirror.com/binary.html?path=chrome-for-testing/)
 >   - [官方 EdgeDriver，国内能访问](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver)
 
 ### 3. Get your cookies
