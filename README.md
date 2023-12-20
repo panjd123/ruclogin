@@ -4,6 +4,8 @@ ruclogin 可以帮助你快速地获取和检查 [v.ruc.edu.cn](v.ruc.edu.cn) (a
 
 [![PyPI Downloads](https://img.shields.io/pypi/dm/ruclogin.svg?label=PyPI%20downloads)](
 https://pypi.org/project/ruclogin/) [![GitHub Repo stars](https://img.shields.io/github/stars/panjd123/ruclogin?label=Github%20stars)](https://github.com/panjd123/ruclogin)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/ruclogin.svg?label=PyPI%20downloads)](
+https://pypi.org/project/ruclogin/) [![GitHub Repo stars](https://img.shields.io/github/stars/panjd123/ruclogin?label=Github%20stars)](https://github.com/panjd123/ruclogin)
 
 ## Simple Example
 
