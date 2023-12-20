@@ -141,11 +141,11 @@ class RUC_LOGIN:
         else:
             raise ValueError("browser must be Chrome, Edge or Chromium")
 
-    def initial_login(self, domain: str):
+    def initial_login(self, domain: str, username="", password=""):
         global config
         config.read(INI_PATH, encoding="utf-8")
-        self.username = config["base"]["username"]
-        self.password = config["base"]["password"]
+        self.username = username or config["base"]["username"]
+        self.password = password or config["base"]["password"]
         self.enableLogging = config["base"].getboolean("enableLogging")
         if domain.startswith("v"):
             url = r"https://v.ruc.edu.cn/auth/login"
@@ -288,13 +288,17 @@ def driver_init():
         loginer_instance = RUC_LOGIN()
 
 
-def get_cookies(cache=True, domain="v", retry=3) -> dict:
+def get_cookies(cache=True, domain="v", retry=3, username="", password="") -> dict:
     """Get cookies from cache or selenium login.
 
     Args:
         cache (bool, optional): Force regain when set to False. Defaults to True.
 
         domain (str, optional): "v", "jw", "v.ruc.edu.cn", "jw.ruc.edu.cn". Defaults to "v".
+
+        username (str, optional)
+
+        password (str, optional)
 
     Returns:
         dict: Like {'tiup_uid': '6112329b90f4d162e19b83c9', 'access_token': 'rhMSVympSBON2Xr8yAdhnQ'}
@@ -304,13 +308,16 @@ def get_cookies(cache=True, domain="v", retry=3) -> dict:
     cache_path = osp.join(ROOT, f"{domain}_cookies.pkl")
     if cache:
         if osp.exists(cache_path):
-            cookies = pickle.load(open(cache_path, "rb"))
-            if check_cookies(cookies, domain):
-                return cookies
+            try:
+                cookies = pickle.load(open(cache_path, "rb"))
+                if check_cookies(cookies, domain):
+                    return cookies
+            except EOFError as e:
+                pass
     if loginer_instance is None:
         loginer_instance = RUC_LOGIN()
     try:
-        loginer_instance.initial_login(domain)
+        loginer_instance.initial_login(domain, username, password)
         loginer_instance.login()
         cookies = loginer_instance.get_cookies(domain)
         if not cookies:
