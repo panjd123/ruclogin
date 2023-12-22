@@ -6,7 +6,6 @@ from selenium.common.exceptions import StaleElementReferenceException
 from requests.exceptions import ConnectionError
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
-from webdriver_manager.core.os_manager import ChromeType
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from time import sleep
@@ -20,11 +19,15 @@ import requests
 import pickle
 import docopt
 import onnxruntime
+from getpass import getpass
 from timeit import default_timer as timer
 
+PASSWORD_INPUT = True
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 INI_PATH = osp.join(ROOT, "config.ini")
+JW_COOKIES_PATH = osp.join(ROOT, "jw_cookies.pkl")
+V_COOKIES_PATH = osp.join(ROOT, "v_cookies.pkl")
 
 loginer_instance = None
 config = configparser.ConfigParser()
@@ -79,9 +82,9 @@ class RUC_LOGIN:
         driver_path = config["base"]["driver"]
 
         def get_options(options):
+            options.add_argument("start-maximized")
             if not debug:
                 options.add_argument("--headless=new")
-                options.add_argument("start-maximized")
                 options.add_argument("--disable-gpu")
                 options.add_argument("--no-sandbox")
                 options.add_argument("--disable-dev-shm-usage")
@@ -122,24 +125,8 @@ class RUC_LOGIN:
                     options=options,
                     service=EdgeService(executable_path=driver_path),
                 )
-        elif browser == "Chromium":
-            options = get_options(webdriver.ChromeOptions())
-            try:
-                self.driver = webdriver.Chrome(
-                    options=options,
-                    service=ChromeService(
-                        ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
-                    ),
-                )
-            except ConnectionError as e:
-                if not osp.exists(driver_path):
-                    raise e
-                self.driver = webdriver.Chrome(
-                    options=options,
-                    service=ChromeService(executable_path=driver_path),
-                )
         else:
-            raise ValueError("browser must be Chrome, Edge or Chromium")
+            raise ValueError("browser must be Chrome or Edge")
 
     def initial_login(self, domain: str, username="", password=""):
         global config
@@ -240,8 +227,15 @@ class RUC_LOGIN:
         status_msg = self.lst_status[1]
         if status_msg == "验证码不正确或已失效,请重试！":
             return False
-        elif status_msg == "用户不存在！" or status_msg == "用户名或密码不正确,请重试！":
-            print("username: {}, password: {}".format(self.username, self.password))
+        elif status_msg == "用户不存在！":
+            raise ValueError(
+                f"用户不存在：\nusername: {self.username}\tpassword：see {INI_PATH}"
+            )
+        elif status_msg == "用户名或密码不正确,请重试！":
+            raise ValueError(
+                f"用户名或密码不正确：\nusername: {self.username}\tpassword：see {INI_PATH}"
+            )
+        elif status_msg:
             raise ValueError("Login failed, status msg from website: " + status_msg)
         return True
 
@@ -393,10 +387,12 @@ def update_username_and_password(username: str, password: str):
     if username or password:
         with open(INI_PATH, "w", encoding="utf-8") as f:
             config.write(f)
-        if osp.exists(osp.join(ROOT, "jw_cookies.pkl")):
-            os.remove(osp.join(ROOT, "jw_cookies.pkl"))
-        if osp.exists(osp.join(ROOT, "v_cookies.pkl")):
-            os.remove(osp.join(ROOT, "v_cookies.pkl"))
+        if osp.exists(JW_COOKIES_PATH):
+            with open(JW_COOKIES_PATH, "w"):
+                pass
+        if osp.exists(V_COOKIES_PATH):
+            with open(V_COOKIES_PATH, "w"):
+                pass
 
 
 def get_username_and_password():
@@ -423,75 +419,101 @@ def update_other(browser=None, driver_path=None):
 
 def main():
     usage = r"""Usage:
-    ruclogin [--username=<username>] [--password=<password>] [--browser=<browser>] [--driver=<driver_path>]
+    ruclogin [--username=<username>] [--password=<password>] [--browser=<browser>] [--driver=<driver_path>] [--reset]
     
 Options:
     --username=<username>   username
     --password=<password>   password
-    --browser=<browser>     browser(Chrome/Edge/Chromium)
+    --browser=<browser>     browser(Chrome/Edge)
     --driver=<driver_path>  driver_path
+    --reset
     """
     args = docopt.docopt(usage)
-    username = args["--username"] or input("username, type enter to skip: ")
-    password = args["--password"] or input("password, type enter to skip: ")
-    browser = args["--browser"] or input(
-        "browser(Chrome/Edge/Chromium), type enter to skip: "
-    )
-    if browser not in ["Chrome", "Edge", "Chromium", ""]:
-        raise ValueError("browser must be Chrome, Edge or Chromium")
-    driver_path = args["--driver"] or input("driver_path, type enter to skip: ")
-    update_username_and_password(username, password)
-    update_other(browser, driver_path)
-    print("\nConfig {} updated:".format(INI_PATH))
-    print(
-        "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}\n\tdriver_path: {}".format(
-            config["base"]["username"],
-            config["base"]["password"],
-            config["base"]["browser"],
-            config["base"]["driver"],
+    if args["--reset"]:
+        update_username_and_password("2021201212", "ABC12345")
+        update_other(browser="Chrome", driver_path="D:/Other/driver/chromedriver.exe")
+        config.read(INI_PATH, encoding="utf-8")
+        print("Config {} updated:".format(INI_PATH))
+        print(
+            "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}\n\tdriver_path: {}".format(
+                config["base"]["username"],
+                config["base"]["password"],
+                config["base"]["browser"],
+                config["base"]["driver"],
+            )
         )
-    )
-    print("\n")
-    isTest = input("Test login? (Y/n): ")
-    if isTest.lower() in ["y", "yes", ""]:
-        try:
-            init_tic = timer()
-            driver_init()
-            init_toc = timer()
-            v_get_tic = timer()
-            v_cookies = get_cookies(domain="v", cache=False)
-            v_get_toc = timer()
-            v_check_tic = timer()
-            v_msg = check_cookies(v_cookies, domain="v")
-            if not v_msg:
-                print(v_cookies)
-                raise RuntimeError("v.ruc.edu.cn cookies are invalid")
-            v_check_toc = timer()
-            jw_get_tic = timer()
-            jw_cookies = get_cookies(domain="jw", cache=False)
-            jw_get_toc = timer()
-            jw_check_tic = timer()
-            jw_msg = check_cookies(jw_cookies, domain="jw")
-            if not jw_msg:
-                print(jw_cookies)
-                raise RuntimeError("jw.ruc.edu.cn cookies are invalid")
-            jw_check_toc = timer()
-            print(v_msg, "from v.ruc.edu.cn")
-            print(jw_msg, "from jw.ruc.edu.cn")
-            print("driver init time: {:.3f}s".format(init_toc - init_tic))
-            print(
-                "v.ruc.edu.cn get cookies time: {:.3f}s, check cookies time: {:.3f}s".format(
-                    v_get_toc - v_get_tic, v_check_toc - v_check_tic
-                )
+        print(f"The size of {V_COOKIES_PATH} is {osp.getsize(V_COOKIES_PATH)}")
+        print(f"The size of {JW_COOKIES_PATH} is {osp.getsize(JW_COOKIES_PATH)}")
+        return
+    restart = True
+    while restart:
+        username = args["--username"] or input("username, type enter to skip: ")
+        if PASSWORD_INPUT:
+            password = args["--password"] or getpass("password, type enter to skip: ")
+        else:
+            password = args["--password"] or input("password, type enter to skip: ")
+        browser = args["--browser"] or input(
+            "browser(Chrome/Edge), type enter to skip: "
+        )
+        browser = browser.capitalize()
+        if browser not in ["Chrome", "Edge", ""]:
+            raise ValueError("browser must be Chrome or Edge")
+        driver_path = args["--driver"] or input("driver_path, type enter to skip: ")
+        update_username_and_password(username, password)
+        update_other(browser, driver_path)
+        print("\nConfig {} updated:".format(INI_PATH))
+        print(
+            "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}\n\tdriver_path: {}".format(
+                config["base"]["username"],
+                "******" if PASSWORD_INPUT else config["base"]["password"],
+                config["base"]["browser"],
+                config["base"]["driver"],
             )
-            print(
-                "jw.ruc.edu.cn get cookies time: {:.3f}s, check cookies time: {:.3f}s".format(
-                    jw_get_toc - jw_get_tic, jw_check_toc - jw_check_tic
+        )
+        print("\n")
+        isTest = input("Test login? (Y/n): ")
+        if isTest.lower() in ["y", "yes", ""]:
+            print("Testing, please be patient and wait...")
+            try:
+                init_tic = timer()
+                driver_init()
+                init_toc = timer()
+                v_get_tic = timer()
+                v_cookies = get_cookies(domain="v", cache=False)
+                v_get_toc = timer()
+                v_check_tic = timer()
+                v_msg = check_cookies(v_cookies, domain="v")
+                if not v_msg:
+                    print(v_cookies)
+                    raise RuntimeError("v.ruc.edu.cn cookies are invalid")
+                v_check_toc = timer()
+                jw_get_tic = timer()
+                jw_cookies = get_cookies(domain="jw", cache=False)
+                jw_get_toc = timer()
+                jw_check_tic = timer()
+                jw_msg = check_cookies(jw_cookies, domain="jw")
+                if not jw_msg:
+                    print(jw_cookies)
+                    raise RuntimeError("jw.ruc.edu.cn cookies are invalid")
+                jw_check_toc = timer()
+                print(v_msg, "from v.ruc.edu.cn")
+                print(jw_msg, "from jw.ruc.edu.cn")
+                print("driver init time: {:.3f}s".format(init_toc - init_tic))
+                print(
+                    "v.ruc.edu.cn get cookies time: {:.3f}s, check cookies time: {:.3f}s".format(
+                        v_get_toc - v_get_tic, v_check_toc - v_check_tic
+                    )
                 )
-            )
-        except Exception as e:
-            print(e)
-            print("Login failed")
+                print(
+                    "jw.ruc.edu.cn get cookies time: {:.3f}s, check cookies time: {:.3f}s".format(
+                        jw_get_toc - jw_get_tic, jw_check_toc - jw_check_tic
+                    )
+                )
+                break
+            except Exception as e:
+                print(e)
+                restart = input("Login failed, restart? (Y/n):")
+                restart = restart == "" or restart.lower()[0] == "y"
 
 
 if __name__ == "__main__":

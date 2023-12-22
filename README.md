@@ -23,11 +23,10 @@ cookies
 pip install ruclogin
 ```
 
-### 1. Install Chrome, Edge or Chromium
+### 1. Install Chrome or Edge
 
 - [Chrome](https://www.google.cn/chrome/)
 - [Edge](https://www.microsoft.com/zh-cn/edge)
-- [Chromium](https://chromium.woolyss.com/download/zh/)
 
 ### 2. Set your username, password and preferred browser in terminal
 
@@ -41,18 +40,18 @@ ruclogin --username 2021201212 --password ABC12345 --browser Chrome --driver ""
 ruclogin
 ```
 
-像这样
+像这样，请注意，密码的输入不带回显（即不显示你输入的内容），你只需要直接输入，然后回车。
 
 ```
 (base) PS D:\Code\ruclogin> ruclogin     
 username, type enter to skip: 2021201212
-password, type enter to skip: ABC12345
-browser(Chrome/Edge/Chromium), type enter to skip:
+password, type enter to skip: 
+browser(Chrome/Edge), type enter to skip:
 driver_path, type enter to skip:
 
 Config D:\Program\anaconda3\Lib\site-packages\ruclogin\config.ini updated:
         Username: 2021201212
-        Password: ABC12345
+        Password: ******
         Browser: Chrome
         driver_path: D:/Other/driver/chromedriver.exe
 
@@ -96,6 +95,12 @@ cookies = get_cookies()                                 # cache=True, it will us
 > Q: 控制台输出 DevTools listening on ws://..... ?
 > 
 > A: 这个输出关不掉，似乎是最新版 ChromeDriver 的一个问题，目前没有解决方案，不影响用，但是会有烦人的提示。
+
+## Remind
+
+拥有 cookies 相当于拥有微人大的完全访问权限，请不要和任何人分享。
+
+执行 `ruclogin --reset` 可以将所有信息初始化（包括配置文件内保存的用户名密码，以及缓存的 cookies）。
 
 ## Update
 
@@ -144,3 +149,11 @@ ruclogin test 现在还会输出耗时。
 #### 0.2.9 Update
 
 更干净的包卸载，支持临时指定 username 和 password（以方便多用户）。
+
+#### 0.2.10 Update
+
+修改了密码的输入方式，现在不回显（即非明文输入）。
+
+增加了 `--reset` 参数用于清空隐私数据。
+
+因为精力所限，删除对 Chromium 的支持。

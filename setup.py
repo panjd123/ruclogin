@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ruclogin",
-    version="0.2.9",
+    version="0.2.10",
     packages=find_packages(),
     description="Login to *.ruc.edu.cn, get cookies.",
     long_description=open("README.md", encoding="utf-8").read(),
