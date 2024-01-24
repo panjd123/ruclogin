@@ -104,29 +104,25 @@ cookies = get_cookies()                                 # cache=True, it will us
 
 ## Update
 
-#### 0.2 Update
+#### 0.2.10 Update
 
-新增 jw.ruc.edu.cn cookies 支持。
+修改了密码的输入方式，现在不回显（即非明文输入）。
 
-```python
-from ruclogin import *
-cookies = get_cookies(domain="jw") # or get_cookies(domain="jw.ruc.edu.cn")
-check_cookies(cookies, domain="jw")
-```
+增加了 `--reset` 参数用于清空隐私数据。
 
-#### 0.2.1 Update
+因为精力所限，删除对 Chromium 的支持。
 
-提高 check_cookies 的鲁棒性。
+#### 0.2.9 Update
 
-#### 0.2.3 Update
+更干净的包卸载，支持临时指定 username 和 password（以方便多用户）。
 
-修改了 check_cookies 的输出，现在会输出所用测试请求的结果例如：“你这学期的课有：并行与分布式计算 计算机系统实现Ⅰ 后人类时代的全球影像 机器学习与计算智能Ⅰ 数据库系统概论荣誉课程 迁移学习 科学技术哲学”，失败返回 None。
+#### 0.2.8 Update
 
-#### 0.2.5 Update
+随着 ddddocr 的更新，Pillow 的旧版本要求现在被删去
 
-支持了手动管理浏览器驱动
+#### 0.2.7 Update
 
-删去了 ruclogin test 时请求用户输入前的额外换行。
+修复部分 bug，通过了服务器运行
 
 #### 0.2.6 Update
 
@@ -138,22 +134,25 @@ ruclogin test 现在还会输出耗时。
 
 集成了 `semester2code` 和 `code2semester` 两个函数，用于学期和学期代码之间转换。
 
-#### 0.2.7 Update
+#### 0.2.5 Update
 
-修复部分 bug，通过了服务器运行
+支持了手动管理浏览器驱动
 
-#### 0.2.8 Update
+删去了 ruclogin test 时请求用户输入前的额外换行。
+#### 0.2.3 Update
 
-随着 ddddocr 的更新，Pillow 的旧版本要求现在被删去
+修改了 check_cookies 的输出，现在会输出所用测试请求的结果例如：“你这学期的课有：并行与分布式计算 计算机系统实现Ⅰ 后人类时代的全球影像 机器学习与计算智能Ⅰ 数据库系统概论荣誉课程 迁移学习 科学技术哲学”，失败返回 None。
 
-#### 0.2.9 Update
+#### 0.2.1 Update
 
-更干净的包卸载，支持临时指定 username 和 password（以方便多用户）。
+提高 check_cookies 的鲁棒性。
 
-#### 0.2.10 Update
+#### 0.2 Update
 
-修改了密码的输入方式，现在不回显（即非明文输入）。
+新增 jw.ruc.edu.cn cookies 支持。
 
-增加了 `--reset` 参数用于清空隐私数据。
-
-因为精力所限，删除对 Chromium 的支持。
+```python
+from ruclogin import *
+cookies = get_cookies(domain="jw") # or get_cookies(domain="jw.ruc.edu.cn")
+check_cookies(cookies, domain="jw")
+```
