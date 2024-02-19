@@ -58,6 +58,24 @@ def code2semester(code="2023-2024-1"):
 
 
 class RUC_LOGIN:
+    """
+    For developer:
+    RUC_LOGIN works like this:
+    1. __init__ function will initialize the webdriver, and read the config from the ini file.
+    2. initial_login function will get the elements in the login page, like input, button, etc.
+    3. get_img function will get the current image of the code.
+    4. do_ocr function will try to do OCR for at most 100 times,
+        it only returns when the result is looks like a valid code(4 letters),
+        otherwise it will click the codeImg and try again.
+    5. try_login function will use the do_ocr function to get the code, and then login.
+        Return False if the code is wrong (failed to login), else return True (success to login).
+    6. login function will try to login for at most 20 times, raise TimeoutError if failed too many times.
+    7. after login, get_cookies function will get the cookies from the driver, and return it.
+
+    The reason why we use do_ocr function is because the ocr's recognition accuracy is not high,
+    and it often makes obvious mistakes, we can recognize the code in advance and manually refresh a code.
+    """
+
     driver: webdriver.Chrome
     usernameInput: WebElement
     passwordInput: WebElement
@@ -129,6 +147,9 @@ class RUC_LOGIN:
             raise ValueError("browser must be Chrome or Edge")
 
     def initial_login(self, domain: str, username="", password=""):
+        """
+        Update username and password, and get the elements in the login page.
+        """
         global config
         config.read(INI_PATH, encoding="utf-8")
         self.username = username or config["base"]["username"]
@@ -156,7 +177,7 @@ class RUC_LOGIN:
         )
         self.login_alter = self.driver.find_element(
             By.XPATH, "/html/body/div/form/div[11]"
-        )
+        )  # This element show the login failed reason, like "验证码不正确或已失效,请重试！"
         self.rememberMe = self.driver.find_element(
             By.XPATH, "/html/body/div/form/div[13]/span[1]/div"
         ).click()
@@ -164,6 +185,9 @@ class RUC_LOGIN:
         self.lst_status = self.current_status()
 
     def get_img(self):
+        """
+        Get the current image of the code.
+        """
         codeImgSrc = self.codeImg.get_attribute("src")
         img = codeImgSrc.split(",")[1]
         img = base64.b64decode(img)
@@ -188,6 +212,11 @@ class RUC_LOGIN:
         return img
 
     def do_ocr(self):
+        """
+        Try to do OCR for at most 100 times,
+        it only returns when the result is looks like a valid code(4 letters).
+        """
+
         def is_valid_result(ocrRes: str):
             if len(ocrRes) != 4:
                 return False
@@ -209,6 +238,10 @@ class RUC_LOGIN:
         raise TimeoutError("OCR failed")
 
     def try_login(self):
+        """
+        Use the do_ocr function to get the code, and then login.
+        Return False if the code is wrong (failed to login), else return True (success to login).
+        """
         self.usernameInput.clear()
         self.passwordInput.clear()
         self.codeInput.clear()
@@ -269,6 +302,9 @@ class RUC_LOGIN:
             return cookies
 
     def login(self):
+        """
+        Try to login for at most 20 times, raise TimeoutError if failed too many times.
+        """
         for _ in range(20):
             success = self.try_login()
             if success:
