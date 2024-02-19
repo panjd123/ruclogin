@@ -137,7 +137,7 @@ class RUC_LOGIN:
         if domain.startswith("v"):
             url = r"https://v.ruc.edu.cn/auth/login"
         else:
-            url = r"https://v.ruc.edu.cn/auth/login?&proxy=true&redirect_uri=https%3A%2F%2Fv.ruc.edu.cn%2Foauth2%2Fauthorize%3Fresponse_type%3Dcode%26scope%3Dall%26state%3Dyourstate%26client_id%3D5d25ae5b90f4d14aa601ede8.ruc%26redirect_uri%3Dhttp%3A%2F%2Fjw.ruc.edu.cn%2FsecService%2Foauthlogin"
+            url = r"https://v.ruc.edu.cn/auth/login?&proxy=true&redirect_uri=https%3A%2F%2Fv.ruc.edu.cn%2Foauth2%2Fauthorize%3Fresponse_type%3Dcode%26scope%3Dall%26state%3Dyourstate%26client_id%3D5d25ae5b90f4d14aa601ede8.ruc%26redirect_uri%3Dhttps%3A%2F%2Fjw.ruc.edu.cn%2FsecService%2Foauthlogin"
         self.driver.get(url)
         self.usernameInput = self.driver.find_element(
             By.XPATH, "/html/body/div/form/div[3]/input"

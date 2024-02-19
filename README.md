@@ -104,6 +104,10 @@ cookies = get_cookies()                                 # cache=True, it will us
 
 ## Update
 
+#### 0.2.11 Update
+
+适配最新教务网站。
+
 #### 0.2.10 Update
 
 修改了密码的输入方式，现在不回显（即非明文输入）。
