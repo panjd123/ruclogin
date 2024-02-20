@@ -64,15 +64,6 @@ v.ruc.edu.cn get cookies time: 1.587s, check cookies time: 0.348s
 jw.ruc.edu.cn get cookies time: 1.925s, check cookies time: 0.395s
 ```
 
-> Q: 我在这一步遇到报错 `Could not reach host. Are you offline?`
->
-> A: 自动获取浏览器驱动需要访问谷歌，你有两个解决方案
-> 1. 开启网络代理
-> 2. 手动包管理，即将浏览器的驱动手动下载到你的主机上，然后指定路径 `ruclogin --driver D:/Other/driver/chromedriver.exe`
->   - [官方 ChromeDriver，需要科学上网](https://googlechromelabs.github.io/chrome-for-testing/)
->   - [淘宝镜像 ChromeDriver](https://registry.npmmirror.com/binary.html?path=chrome-for-testing/)
->   - [官方 EdgeDriver，国内能访问](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver)
-
 ### 3. Get your cookies
 
 ```python
@@ -92,23 +83,45 @@ cookies = get_cookies()                                 # cache=True, it will us
 
 无论用什么方式设置用户名和密码，你只需要设置一次。
 
-> Q: 控制台输出 DevTools listening on ws://..... ?
-> 
-> A: 这个输出关不掉，似乎是最新版 ChromeDriver 的一个问题，目前没有解决方案，不影响用，但是会有烦人的提示。
-
 ## Remind
 
 拥有 cookies 相当于拥有微人大的完全访问权限，请不要和任何人分享。
 
 执行 `ruclogin --reset` 可以将所有信息初始化（包括配置文件内保存的用户名密码，以及缓存的 cookies）。
 
+## Q&A
+
+Q: 我遇到报错 `Could not reach host. Are you offline?`
+
+A: 自动获取浏览器驱动需要访问谷歌，你有两个解决方案
+
+1. 开启网络代理
+2. 手动包管理，即将浏览器的驱动手动下载到你的主机上，然后指定路径 `ruclogin --driver D:/Other/driver/chromedriver.exe`
+   - [官方 ChromeDriver，需要科学上网](https://googlechromelabs.github.io/chrome-for-testing/)
+   - [淘宝镜像 ChromeDriver](https://registry.npmmirror.com/binary.html?path=chrome-for-testing/)
+   - [官方 EdgeDriver，国内能访问](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver)
+
+目前脚本的处理方法是，当能访问谷歌时优先使用自动下载的驱动，否则尝试使用手动指定的驱动。
+
+Q: 控制台输出 DevTools listening on ws://..... ?
+
+A: 这个输出关不掉，似乎是最新版 ChromeDriver 的一个问题，目前没有解决方案，不影响用，但是会有烦人的提示。
+
+Q: 我遇到了其他报错。
+
+A: 运行 `ruclogin --debug` 可以显示浏览器的操作过程，这可能有助于你发现问题。如果你是开发者，欢迎提交 pr 修复。
+
 ## Update
 
-#### 0.2.11 Update
+### 0.2.12
+
+增加了 `--debug` 参数，可以显示浏览器的操作过程。
+
+### 0.2.11
 
 适配最新教务网站。
 
-#### 0.2.10 Update
+### 0.2.10
 
 修改了密码的输入方式，现在不回显（即非明文输入）。
 
@@ -116,19 +129,19 @@ cookies = get_cookies()                                 # cache=True, it will us
 
 因为精力所限，删除对 Chromium 的支持。
 
-#### 0.2.9 Update
+### 0.2.9
 
 更干净的包卸载，支持临时指定 username 和 password（以方便多用户）。
 
-#### 0.2.8 Update
+### 0.2.8
 
-随着 ddddocr 的更新，Pillow 的旧版本要求现在被删去
+随着 ddddocr 的更新，Pillow 的旧版本要求现在被删去。
 
-#### 0.2.7 Update
+### 0.2.7
 
-修复部分 bug，通过了服务器运行
+修复部分 bug，通过了服务器运行。
 
-#### 0.2.6 Update
+### 0.2.6
 
 细化了报错提示，更容易检查。 
 
@@ -138,20 +151,21 @@ ruclogin test 现在还会输出耗时。
 
 集成了 `semester2code` 和 `code2semester` 两个函数，用于学期和学期代码之间转换。
 
-#### 0.2.5 Update
+### 0.2.5
 
-支持了手动管理浏览器驱动
+支持了手动管理浏览器驱动。
 
 删去了 ruclogin test 时请求用户输入前的额外换行。
-#### 0.2.3 Update
+
+### 0.2.3
 
 修改了 check_cookies 的输出，现在会输出所用测试请求的结果例如：“你这学期的课有：并行与分布式计算 计算机系统实现Ⅰ 后人类时代的全球影像 机器学习与计算智能Ⅰ 数据库系统概论荣誉课程 迁移学习 科学技术哲学”，失败返回 None。
 
-#### 0.2.1 Update
+### 0.2.1
 
 提高 check_cookies 的鲁棒性。
 
-#### 0.2 Update
+### 0.2
 
 新增 jw.ruc.edu.cn cookies 支持。
 

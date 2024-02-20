@@ -312,10 +312,10 @@ class RUC_LOGIN:
         raise TimeoutError("Login failed, try too many times")
 
 
-def driver_init():
+def driver_init(debug=False):
     global loginer_instance
     if loginer_instance is None:
-        loginer_instance = RUC_LOGIN()
+        loginer_instance = RUC_LOGIN(debug=debug)
 
 
 def get_cookies(cache=True, domain="v", retry=3, username="", password="") -> dict:
@@ -344,8 +344,7 @@ def get_cookies(cache=True, domain="v", retry=3, username="", password="") -> di
                     return cookies
             except EOFError as e:
                 pass
-    if loginer_instance is None:
-        loginer_instance = RUC_LOGIN()
+    driver_init()
     try:
         loginer_instance.initial_login(domain, username, password)
         loginer_instance.login()
@@ -455,7 +454,7 @@ def update_other(browser=None, driver_path=None):
 
 def main():
     usage = r"""Usage:
-    ruclogin [--username=<username>] [--password=<password>] [--browser=<browser>] [--driver=<driver_path>] [--reset]
+    ruclogin [--username=<username>] [--password=<password>] [--browser=<browser>] [--driver=<driver_path>] [--reset] [--debug]
     
 Options:
     --username=<username>   username
@@ -463,6 +462,7 @@ Options:
     --browser=<browser>     browser(Chrome/Edge)
     --driver=<driver_path>  driver_path
     --reset
+    --debug
     """
     args = docopt.docopt(usage)
     if args["--reset"]:
@@ -512,7 +512,7 @@ Options:
             print("Testing, please be patient and wait...")
             try:
                 init_tic = timer()
-                driver_init()
+                driver_init(args["--debug"])
                 init_toc = timer()
                 v_get_tic = timer()
                 v_cookies = get_cookies(domain="v", cache=False)
