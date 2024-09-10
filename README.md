@@ -23,15 +23,23 @@ cookies
 pip install ruclogin
 ```
 
-### 1. Install Chrome or Edge
+### 1. Install Chrome or Edge, and download the corresponding driver
 
 - [Chrome](https://www.google.cn/chrome/)
 - [Edge](https://www.microsoft.com/zh-cn/edge)
 
+接着你需要查看你的浏览器版本并下载尽量最对应的最新的浏览器驱动
+
+- [官方 ChromeDriver，需要科学上网](https://googlechromelabs.github.io/chrome-for-testing/)
+- [淘宝镜像 ChromeDriver](https://registry.npmmirror.com/binary.html?path=chrome-for-testing/)
+- [官方 EdgeDriver，国内能访问](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver)
+
+我们假设你下载的驱动文件放在 `D:/Other/driver/chromedriver.exe`
+
 ### 2. Set your username, password and preferred browser in terminal
 
 ```bash
-ruclogin --username 2021201212 --password ABC12345 --browser Chrome --driver ""
+ruclogin --username 2021201212 --password ABC12345 --browser Chrome --driver "D:/Other/driver/chromedriver.exe"
 ```
 
 或者使用交互式命令行
@@ -91,7 +99,7 @@ cookies = get_cookies()                                 # cache=True, it will us
 
 ## Q&A
 
-Q: 我遇到报错 `Could not reach host. Are you offline?`
+<!-- Q: 我遇到报错 `Could not reach host. Are you offline?`
 
 A: 自动获取浏览器驱动需要访问谷歌，你有两个解决方案
 
@@ -101,7 +109,7 @@ A: 自动获取浏览器驱动需要访问谷歌，你有两个解决方案
    - [淘宝镜像 ChromeDriver](https://registry.npmmirror.com/binary.html?path=chrome-for-testing/)
    - [官方 EdgeDriver，国内能访问](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver)
 
-目前脚本的处理方法是，当能访问谷歌时优先使用自动下载的驱动，否则尝试使用手动指定的驱动。
+目前脚本的处理方法是，当能访问谷歌时优先使用自动下载的驱动，否则尝试使用手动指定的驱动。 -->
 
 Q: 控制台输出 DevTools listening on ws://..... ?
 
@@ -112,6 +120,13 @@ Q: 我遇到了其他报错。
 A: 运行 `ruclogin --debug` 可以显示浏览器的操作过程，这可能有助于你发现问题。如果你是开发者，欢迎提交 pr 修复。
 
 ## Update
+
+### 0.3.1
+
+新增依赖 blinker==1.7.0，见 [#7](https://github.com/panjd123/RUC-CourseSelectionTool/issues/7)。@JasonHuang0812
+
+因为作者观察到的 “[WinError 193] %1 不是有效的 Win32 应用程序。”，怀疑是 webdriver_manager 存在问题，现在总是要求手动指定 driver_path。
+如果你需要原来的自动下载功能，可以删除 `ruclogin.py` 中 124 和 139 行的 `raise ConnectionError`
 
 ### 0.3.0
 

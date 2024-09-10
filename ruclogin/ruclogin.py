@@ -121,6 +121,7 @@ class RUC_LOGIN:
         if browser == "Chrome":
             options = get_options(webdriver.ChromeOptions())
             try:
+                raise ConnectionError  # force to use the driver in the project
                 self.driver = webdriver.Chrome(
                     options=options,
                     service=ChromeService(ChromeDriverManager().install()),
@@ -135,6 +136,7 @@ class RUC_LOGIN:
         elif browser == "Edge":
             options = get_options(webdriver.EdgeOptions())
             try:
+                raise ConnectionError  # force to use the driver in the project
                 self.driver = webdriver.Edge(
                     options=options,
                     service=EdgeService(EdgeChromiumDriverManager().install()),
