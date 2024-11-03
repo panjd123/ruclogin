@@ -327,6 +327,11 @@ class RUC_LOGIN:
                 return
         raise TimeoutError("Login failed, try too many times")
 
+    def __del__(self):
+        if hasattr(self, 'driver'):
+            self.driver.quit()
+        return
+
 
 def driver_init(debug=False):
     global loginer_instance
