@@ -581,7 +581,7 @@ Options:
                     if retry == 0:
                         raise e
                 restart = input("Login failed, restart? (Y/n/r(raise exception)):")
-                if restart.lower()[0] == "r":
+                if len(restart) > 0 and restart.lower()[0] == "r":
                     raise e
                 restart = restart == "" or restart.lower()[0] == "y"
 
