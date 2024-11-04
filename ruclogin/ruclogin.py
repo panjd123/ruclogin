@@ -444,7 +444,10 @@ def update_username_and_password(username: str, password: str):
     if username or password:
         with open(INI_PATH, "w", encoding="utf-8") as f:
             config.write(f)
-        subprocess.run(["rm", "-f", JW_COOKIES_PATH, V_COOKIES_PATH])
+        if osp.exists(JW_COOKIES_PATH):
+            os.remove(JW_COOKIES_PATH)
+        if osp.exists(V_COOKIES_PATH):
+            os.remove(V_COOKIES_PATH)
 
 
 
@@ -472,7 +475,7 @@ def update_other(browser=None, driver_path=None):
 
 def main():
     usage = r"""Usage:
-    ruclogin [--username=<username>] [--password=<password>] [--browser=<browser>] [--driver=<driver_path>] [--reset] [--debug]
+    ruclogin [--username=<username>] [--password=<password>] [--browser=<browser>] [--driver=<driver_path>] [--reset] [--debug] [--no_interactive]
     
 Options:
     --username=<username>   username
@@ -503,6 +506,7 @@ Options:
         )
         return
     restart = True
+    retry = 3
     while restart:
         username = args["--username"] or input("username, type enter to skip: ")
         if PASSWORD_INPUT:
@@ -528,7 +532,10 @@ Options:
             )
         )
         print("\n")
-        isTest = input("Test login? (Y/n): ")
+        if args["--no_interactive"]:
+            isTest = "y"
+        else:
+            isTest = input("Test login? (Y/n): ")
         if isTest.lower() in ["y", "yes", ""]:
             print("Testing, please be patient and wait...")
             try:
@@ -569,6 +576,10 @@ Options:
                 break
             except Exception as e:
                 print(e)
+                if args["--no_interactive"]:
+                    retry -= 1
+                    if retry == 0:
+                        raise e
                 restart = input("Login failed, restart? (Y/n/r(raise exception)):")
                 if restart.lower()[0] == "r":
                     raise e
