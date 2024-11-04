@@ -7,7 +7,7 @@ enabled = true
 
 [project]
 name = "ruclogin"
-version = "0.3.2"
+dynamic = ["version"]
 description = "Login to *.ruc.edu.cn, get cookies."
 readme = "README.md"
 authors = [
