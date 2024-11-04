@@ -125,6 +125,12 @@ A: 运行 `ruclogin --debug` 可以显示浏览器的操作过程，这可能有
 
 Quit driver in destructor of RUC_LOGIN, [#8](https://github.com/panjd123/ruclogin/pull/8).
 
+更新到更现代的 pyproject.toml。
+
+修改了 reset 的逻辑。
+
+优化了 debug 体验，你可以在 test login 失败时选择抛出异常。
+
 ### 0.3.1
 
 新增依赖 blinker==1.7.0，见 [#7](https://github.com/panjd123/RUC-CourseSelectionTool/issues/7)。@JasonHuang0812

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools", "wheel", "setuptools-git-versioning>=2.0,<3"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools-git-versioning]
+enabled = true
+
+[project]
+name = "ruclogin"
+version = "0.3.2"
+description = "Login to *.ruc.edu.cn, get cookies."
+readme = "README.md"
+authors = [
+    { name = "panjd123", email = "xm.jarden@gmail.com" }
+]
+license = {file = "LICENSE"}
+dependencies = [
+    "requests",
+    "selenium",
+    "selenium-wire",
+    "webdriver_manager",
+    "ddddocr",
+    "docopt",
+    "blinker==1.7.0"  # due to a bug in selenium-wire
+]
+
+[project.urls]
+Homepage = "https://github.com/panjd123/ruclogin"
+Repository = "https://github.com/panjd123/ruclogin.git"
+
+[tool.setuptools.package-data]
+ruclogin = ["config.ini", "v_cookies.pkl", "jw_cookies.pkl"]
+
+[project.scripts]
+ruclogin = "ruclogin.ruclogin:main"

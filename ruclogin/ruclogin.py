@@ -17,6 +17,7 @@ import ddddocr
 import base64
 import os
 import os.path as osp
+import subprocess
 import configparser
 import requests
 import pickle
@@ -128,7 +129,7 @@ class RUC_LOGIN:
                 )
             except ConnectionError as e:
                 if not osp.exists(driver_path):
-                    raise e
+                    raise RuntimeError(f"driver {driver_path} not found")
                 self.driver = webdriver.Chrome(
                     options=options,
                     service=ChromeService(executable_path=driver_path),
@@ -143,7 +144,7 @@ class RUC_LOGIN:
                 )
             except ConnectionError as e:
                 if not osp.exists(driver_path):
-                    raise e
+                    raise RuntimeError(f"driver {driver_path} not found")
                 self.driver = webdriver.Edge(
                     options=options,
                     service=EdgeService(executable_path=driver_path),
@@ -443,12 +444,8 @@ def update_username_and_password(username: str, password: str):
     if username or password:
         with open(INI_PATH, "w", encoding="utf-8") as f:
             config.write(f)
-        if osp.exists(JW_COOKIES_PATH):
-            with open(JW_COOKIES_PATH, "w"):
-                pass
-        if osp.exists(V_COOKIES_PATH):
-            with open(V_COOKIES_PATH, "w"):
-                pass
+        subprocess.run(["rm", "-f", JW_COOKIES_PATH, V_COOKIES_PATH])
+
 
 
 def get_username_and_password():
@@ -499,10 +496,10 @@ Options:
                 config["base"]["driver"],
             )
         )
-        print(f"The size of {V_COOKIES_PATH} is {osp.getsize(V_COOKIES_PATH)}")
-        print(f"The size of {JW_COOKIES_PATH} is {osp.getsize(JW_COOKIES_PATH)}")
+        assert not osp.exists(JW_COOKIES_PATH)
+        assert not osp.exists(V_COOKIES_PATH)
         print(
-            f"请检查用户名和密码是否恢复默认（或者说不是你的），并检查两个文件的大小是否为 0"
+            f"请检查用户名和密码是否恢复默认（或者说不是你的）"
         )
         return
     restart = True
@@ -572,7 +569,9 @@ Options:
                 break
             except Exception as e:
                 print(e)
-                restart = input("Login failed, restart? (Y/n):")
+                restart = input("Login failed, restart? (Y/n/r(raise exception)):")
+                if restart.lower()[0] == "r":
+                    raise e
                 restart = restart == "" or restart.lower()[0] == "y"
 
 
