@@ -121,6 +121,10 @@ A: 运行 `ruclogin --debug` 可以显示浏览器的操作过程，这可能有
 
 ## Update
 
+### 0.3.2
+
+Quit driver in destructor of RUC_LOGIN, [#8](https://github.com/panjd123/ruclogin/pull/8).
+
 ### 0.3.1
 
 新增依赖 blinker==1.7.0，见 [#7](https://github.com/panjd123/RUC-CourseSelectionTool/issues/7)。@JasonHuang0812
