@@ -119,6 +119,15 @@ Q: 我遇到了其他报错。
 
 A: 运行 `ruclogin --debug` 可以显示浏览器的操作过程，这可能有助于你发现问题。如果你是开发者，欢迎提交 pr 修复。
 
+## 兼容性测试
+
+如果遇到问题，你可以尝试参考 Github Actions 一通过测试的环境。
+
+打开 Actions，选择对应系统的 Workflow，比如 Linux Test，进入最近的一次 job：
+
+- 展开 `Set up job`，展开 `Operating System`，可以看到使用的系统镜像，比如 `Ubuntu 20.04.5 LTS`
+- 展开 `Set up Chrome`，可以看到使用的 Chrome 版本，比如 `Successfully setup chromium 130.0.6723.91` 和 `Successfully setup ChromeDriver 130.0.6723.91`
+
 ## Update
 
 ### 0.3.2
