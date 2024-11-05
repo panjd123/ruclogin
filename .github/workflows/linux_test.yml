@@ -15,6 +15,7 @@ jobs:
       id: setup_chrome
       uses: browser-actions/setup-chrome@v1
       with:
+        chrome-version: stable
         install-dependencies: true
         install-chromedriver: true
     - name: Install ruclogin
