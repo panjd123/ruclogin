@@ -132,7 +132,7 @@ A: 运行 `ruclogin --debug` 可以显示浏览器的操作过程，这可能有
 
 ### 0.3.2
 
-Quit driver in destructor of RUC_LOGIN, [#8](https://github.com/panjd123/ruclogin/pull/8). [@zhecfy](https://github.com/zhecfy)
+Quit driver in destructor of RUC_LOGIN, [#8](https://github.com/panjd123/ruclogin/pull/8). @[zhecfy](https://github.com/zhecfy)
 
 更新到更现代的 pyproject.toml。
 
@@ -146,7 +146,7 @@ Quit driver in destructor of RUC_LOGIN, [#8](https://github.com/panjd123/ruclogi
 
 ### 0.3.1
 
-新增依赖 blinker==1.7.0，见 [#7](https://github.com/panjd123/RUC-CourseSelectionTool/issues/7)。[@JasonHuang0812](https://github.com/JasonHuang0812)
+新增依赖 blinker==1.7.0，见 [#7](https://github.com/panjd123/RUC-CourseSelectionTool/issues/7)。@[JasonHuang0812](https://github.com/JasonHuang0812)
 
 因为作者观察到的 “[WinError 193] %1 不是有效的 Win32 应用程序。”，怀疑是 webdriver_manager 存在问题，现在总是要求手动指定 driver_path。
 如果你需要原来的自动下载功能，可以删除 `ruclogin.py` 中 124 和 139 行的 `raise ConnectionError`
