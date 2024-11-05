@@ -121,7 +121,7 @@ A: 运行 `ruclogin --debug` 可以显示浏览器的操作过程，这可能有
 
 ## 兼容性测试
 
-如果遇到问题，你可以尝试参考 Github Actions 一通过测试的环境。
+如果遇到问题，你可以尝试参考 Github Actions 中通过测试的环境。
 
 打开 Actions，选择对应系统的 Workflow，比如 Linux Test，进入最近的一次 job：
 
