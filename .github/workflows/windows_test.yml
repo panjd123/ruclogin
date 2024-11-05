@@ -1,0 +1,26 @@
+name: Windows Test
+'on':
+- push
+- pull_request
+jobs:
+  run_tests:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.11
+    - name: Setup Chrome
+      id: setup_chrome
+      uses: browser-actions/setup-chrome@v1
+      with:
+        install-dependencies: true
+        install-chromedriver: true
+    - name: Install ruclogin
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    - name: Run tests
+      run: |
+        ruclogin --username ${{ secrets.USERNAME }} --password "${{ secrets.PASSWORD }}" --browser chrome --driver ${{ steps.setup_chrome.outputs.chromedriver-path }} --no_interactive

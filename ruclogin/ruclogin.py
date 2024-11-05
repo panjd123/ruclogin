@@ -506,7 +506,7 @@ Options:
         )
         return
     restart = True
-    retry = 3
+    retry = 0
     while restart:
         username = args["--username"] or input("username, type enter to skip: ")
         if PASSWORD_INPUT:
@@ -577,13 +577,15 @@ Options:
             except Exception as e:
                 print(e)
                 if args["--no_interactive"]:
-                    retry -= 1
-                    if retry == 0:
+                    retry += 1
+                    print(f"retry {retry} times")
+                    if retry == 3:
                         raise e
-                restart = input("Login failed, restart? (Y/n/r(raise exception)):")
-                if len(restart) > 0 and restart.lower()[0] == "r":
-                    raise e
-                restart = restart == "" or restart.lower()[0] == "y"
+                else:
+                    restart = input("Login failed, restart? (Y/n/r(raise exception)):")
+                    if len(restart) > 0 and restart.lower()[0] == "r":
+                        raise e
+                    restart = restart == "" or restart.lower()[0] == "y"
 
 
 if __name__ == "__main__":
