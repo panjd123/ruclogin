@@ -475,7 +475,7 @@ def update_other(browser=None, driver_path=None):
 
 def main():
     usage = r"""Usage:
-    ruclogin [--username=<username>] [--password=<password>] [--browser=<browser>] [--driver=<driver_path>] [--reset] [--debug] [--no_interactive]
+    ruclogin [--username=<username>] [--password=<password>] [--browser=<browser>] [--driver=<driver_path>] [--reset] [--debug] [--no_interactive] [--silent]
     
 Options:
     --username=<username>   username
@@ -490,20 +490,18 @@ Options:
         update_username_and_password("2021201212", "ABC12345")
         update_other(browser="Chrome", driver_path="D:/Other/driver/chromedriver.exe")
         config.read(INI_PATH, encoding="utf-8")
-        print("Config {} updated:".format(INI_PATH))
-        print(
-            "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}\n\tdriver_path: {}".format(
-                config["base"]["username"],
-                config["base"]["password"],
-                config["base"]["browser"],
-                config["base"]["driver"],
+        if not args["--silent"]:
+            print("Config {} updated:".format(INI_PATH))
+            print(
+                "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}\n\tdriver_path: {}".format(
+                    config["base"]["username"],
+                    config["base"]["password"],
+                    config["base"]["browser"],
+                    config["base"]["driver"],
+                )
             )
-        )
         assert not osp.exists(JW_COOKIES_PATH)
         assert not osp.exists(V_COOKIES_PATH)
-        print(
-            f"请检查用户名和密码是否恢复默认（或者说不是你的）"
-        )
         return
     restart = True
     retry = 0
@@ -522,22 +520,23 @@ Options:
         driver_path = args["--driver"] or input("driver_path, type enter to skip: ")
         update_username_and_password(username, password)
         update_other(browser, driver_path)
-        print("\nConfig {} updated:".format(INI_PATH))
-        print(
-            "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}\n\tdriver_path: {}".format(
-                config["base"]["username"],
-                "******" if PASSWORD_INPUT else config["base"]["password"],
-                config["base"]["browser"],
-                config["base"]["driver"],
-            )
-        )
-        print("\n")
         if args["--no_interactive"]:
             isTest = "y"
         else:
+            print("\nConfig {} updated:".format(INI_PATH))
+            print(
+                "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}\n\tdriver_path: {}".format(
+                    config["base"]["username"],
+                    "******" if PASSWORD_INPUT else config["base"]["password"],
+                    config["base"]["browser"],
+                    config["base"]["driver"],
+                )
+            )
+            print("\n")
             isTest = input("Test login? (Y/n): ")
         if isTest.lower() in ["y", "yes", ""]:
-            print("Testing, please be patient and wait...")
+            if not args["--silent"]:
+                print("Testing, please be patient and wait...")
             try:
                 init_tic = timer()
                 driver_init(args["--debug"])
@@ -548,7 +547,8 @@ Options:
                 v_check_tic = timer()
                 v_msg = check_cookies(v_cookies, domain="v")
                 if not v_msg:
-                    print(v_cookies)
+                    if not args["--silent"]:
+                        print(v_cookies)
                     raise RuntimeError("v.ruc.edu.cn cookies are invalid")
                 v_check_toc = timer()
                 jw_get_tic = timer()
@@ -557,11 +557,13 @@ Options:
                 jw_check_tic = timer()
                 jw_msg = check_cookies(jw_cookies, domain="jw")
                 if not jw_msg:
-                    print(jw_cookies)
+                    if not args["--silent"]:
+                        print(jw_cookies)
                     raise RuntimeError("jw.ruc.edu.cn cookies are invalid")
                 jw_check_toc = timer()
-                print(v_msg, "from v.ruc.edu.cn")
-                print(jw_msg, "from jw.ruc.edu.cn")
+                if not args["--silent"]:
+                    print(v_msg, "from v.ruc.edu.cn")
+                    print(jw_msg, "from jw.ruc.edu.cn")
                 print("driver init time: {:.3f}s".format(init_toc - init_tic))
                 print(
                     "v.ruc.edu.cn get cookies time: {:.3f}s, check cookies time: {:.3f}s".format(
@@ -575,11 +577,12 @@ Options:
                 )
                 break
             except Exception as e:
-                print(e)
+                if not args["--silent"]:
+                    print(e)
                 if args["--no_interactive"]:
                     retry += 1
                     print(f"retry {retry} times")
-                    if retry == 3:
+                    if retry == 5:
                         raise e
                 else:
                     restart = input("Login failed, restart? (Y/n/r(raise exception)):")
