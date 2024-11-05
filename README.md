@@ -25,7 +25,7 @@ pip install ruclogin
 
 ### 1. Install Chrome or Edge, and download the corresponding driver
 
-- [Chrome](https://www.google.cn/chrome/)
+- [Chrome](https://www.google.cn/chrome/)，推荐，作者版本更新时只保证对 Chrome 的支持
 - [Edge](https://www.microsoft.com/zh-cn/edge)
 
 接着你需要查看你的浏览器版本并下载尽量最对应的最新的浏览器驱动
@@ -127,9 +127,13 @@ Quit driver in destructor of RUC_LOGIN, [#8](https://github.com/panjd123/ruclogi
 
 更新到更现代的 pyproject.toml。
 
-修改了 reset 的逻辑。
+修改了 reset 的逻辑为删除 cache。
 
 优化了 debug 体验，你可以在 test login 失败时选择抛出异常。
+
+为命令行脚本添加了 `--no_interactive` 和 `--silent` 参数，可用于 CI/CD。
+
+为项目添加了 GitHub Actions，目前只支持 Chrome 测试。
 
 ### 0.3.1
 
@@ -140,7 +144,7 @@ Quit driver in destructor of RUC_LOGIN, [#8](https://github.com/panjd123/ruclogi
 
 ### 0.3.0
 
-修复了使用 Edge 浏览器时， Cookies 获取不正常的重大 BUG。
+修复了使用 Edge 浏览器时， Cookies 获取不正常的 BUG。
 
 大幅度增强了访问时的鲁棒性。
 
