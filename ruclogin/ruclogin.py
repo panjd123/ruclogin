@@ -1,30 +1,32 @@
 # from selenium import webdriver
-import seleniumwire.webdriver as webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import ElementClickInterceptedException
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.edge.service import Service as EdgeService
-from selenium.common.exceptions import StaleElementReferenceException
-from requests.exceptions import ConnectionError
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
-from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webelement import WebElement
-from time import sleep
-import datetime
-import ddddocr
 import base64
+import configparser
+import datetime
 import os
 import os.path as osp
-import subprocess
-import configparser
-import requests
 import pickle
+from getpass import getpass
+from time import sleep
+from timeit import default_timer as timer
+
+import ddddocr
 import docopt
 import onnxruntime
-from getpass import getpass
-from timeit import default_timer as timer
+import requests
+import seleniumwire.webdriver as webdriver
+from requests.exceptions import ConnectionError
+from selenium.common.exceptions import (
+    ElementClickInterceptedException,
+    StaleElementReferenceException,
+)
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.common.by import By
+from selenium.webdriver.edge.service import Service as EdgeService
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 PASSWORD_INPUT = True
 
@@ -97,11 +99,10 @@ class RUC_LOGIN:
 
     def __init__(self, debug=False) -> None:
         self.date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        self.ocr = ddddocr.DdddOcr(show_ad=False)
+        self.ocr = ddddocr.DdddOcr()
         global config
         config.read(INI_PATH, encoding="utf-8")
         browser = config["base"]["browser"]
-        driver_path = config["base"]["driver"]
 
         def get_options(options):
             options.add_argument("start-maximized")
@@ -122,12 +123,12 @@ class RUC_LOGIN:
         if browser == "Chrome":
             options = get_options(webdriver.ChromeOptions())
             try:
-                raise ConnectionError  # force to use the driver in the project
                 self.driver = webdriver.Chrome(
                     options=options,
-                    service=ChromeService(ChromeDriverManager().install()),
                 )
-            except ConnectionError as e:
+            except Exception as e:
+                print(f"Warning: Failed to initialize Chrome driver automatically: {e}")
+                driver_path = config["base"]["driver"]
                 if not osp.exists(driver_path):
                     raise RuntimeError(f"driver {driver_path} not found")
                 self.driver = webdriver.Chrome(
@@ -137,12 +138,13 @@ class RUC_LOGIN:
         elif browser == "Edge":
             options = get_options(webdriver.EdgeOptions())
             try:
-                raise ConnectionError  # force to use the driver in the project
                 self.driver = webdriver.Edge(
                     options=options,
                     service=EdgeService(EdgeChromiumDriverManager().install()),
                 )
-            except ConnectionError as e:
+            except Exception as e:
+                print(f"Warning: Failed to download Edge driver automatically: {e}")
+                driver_path = config["base"]["driver"]
                 if not osp.exists(driver_path):
                     raise RuntimeError(f"driver {driver_path} not found")
                 self.driver = webdriver.Edge(
@@ -159,10 +161,12 @@ class RUC_LOGIN:
         Update username and password, and get the elements in the login page.
         """
         global config
+        # 使用 raw 配置读取器来避免 % 解析问题
         config.read(INI_PATH, encoding="utf-8")
-        self.username = username or config["base"]["username"]
-        self.password = password or config["base"]["password"]
+        self.username = username or config.get("base", "username", raw=True)
+        self.password = password or config.get("base", "password", raw=True)
         self.enableLogging = config["base"].getboolean("enableLogging")
+
         if domain.startswith("v"):
             url = r"https://v.ruc.edu.cn/auth/login"
         else:
@@ -216,7 +220,12 @@ class RUC_LOGIN:
 
     def current_status(self):
         try:
-            return ("logging in", self.login_alter.text, self.get_img())
+            # 直接返回原始文本，不做任何格式化
+            raw_text = self.login_alter.text
+            if raw_text and "%" in raw_text:
+                # 如果文本中包含%，进行特殊处理
+                raw_text = raw_text.replace("%", "%%")
+            return ("logging in", raw_text, self.get_img())
         except StaleElementReferenceException:  # 找不到元素，说明已经登录成功
             return ("success", None, None)
 
@@ -266,6 +275,7 @@ class RUC_LOGIN:
         self.usernameInput.clear()
         self.passwordInput.clear()
         self.codeInput.clear()
+
         self.usernameInput.send_keys(self.username)
         self.passwordInput.send_keys(self.password)
         ocrRes, img = self.do_ocr()
@@ -279,18 +289,27 @@ class RUC_LOGIN:
             sleep(0.1)
         self.lst_status = self.current_status()
         status_msg = self.lst_status[1]
-        if status_msg == "验证码不正确或已失效,请重试！":
+
+        # 处理状态消息时避免格式化问题
+        if status_msg and "验证码不正确" in status_msg:
             return False
-        elif status_msg == "用户不存在！":
+        elif status_msg and "用户不存在" in status_msg:
             raise ValueError(
-                f"用户不存在：\nusername: {self.username}\tpassword：see {INI_PATH}"
+                "用户不存在：\nusername: {}\tpassword：see {}".format(
+                    self.username, INI_PATH
+                )
             )
-        elif status_msg == "用户名或密码不正确,请重试！":
+        elif status_msg and "用户名或密码不正确" in status_msg:
             raise ValueError(
-                f"用户名或密码不正确：\nusername: {self.username}\tpassword：see {INI_PATH}"
+                "用户名或密码不正确：\nusername: {}\tpassword：see {}".format(
+                    self.username, INI_PATH
+                )
             )
         elif status_msg:
-            raise ValueError("Login failed, status msg from website: " + status_msg)
+            # 避免直接使用可能包含%的文本
+            raise ValueError(
+                "Login failed, raw status msg: {}".format(repr(status_msg))
+            )
         return True
 
     def get_cookies(self, domain="v"):
@@ -329,7 +348,7 @@ class RUC_LOGIN:
         raise TimeoutError("Login failed, try too many times")
 
     def __del__(self):
-        if hasattr(self, 'driver'):
+        if hasattr(self, "driver"):
             self.driver.quit()
         return
 
@@ -450,7 +469,6 @@ def update_username_and_password(username: str, password: str):
             os.remove(V_COOKIES_PATH)
 
 
-
 def get_username_and_password():
     """Get username and password, read from disk.
 
@@ -524,12 +542,16 @@ Options:
             isTest = "y"
         else:
             print("\nConfig {} updated:".format(INI_PATH))
+            password_display = (
+                repr(config["base"]["password"])[1:-1]  # 使用 repr() 并去掉引号
+                if not PASSWORD_INPUT
+                else "******"
+            )
             print(
-                "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}\n\tdriver_path: {}".format(
+                "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}".format(
                     config["base"]["username"],
-                    "******" if PASSWORD_INPUT else config["base"]["password"],
+                    password_display,
                     config["base"]["browser"],
-                    config["base"]["driver"],
                 )
             )
             print("\n")
