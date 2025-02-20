@@ -8,9 +8,9 @@ import pickle
 from getpass import getpass
 from time import sleep
 from timeit import default_timer as timer
+import argparse
 
 import ddddocr
-import docopt
 import onnxruntime
 import requests
 import seleniumwire.webdriver as webdriver
@@ -99,7 +99,7 @@ class RUC_LOGIN:
 
     def __init__(self, debug=False) -> None:
         self.date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        self.ocr = ddddocr.DdddOcr()
+        self.ocr = ddddocr.DdddOcr(show_ad=False)
         global config
         config.read(INI_PATH, encoding="utf-8")
         browser = config["base"]["browser"]
@@ -416,7 +416,11 @@ def check_cookies(cookies, domain="v"):
     try:
         if domain.startswith("v"):
             response = requests.get(
-                "https://v.ruc.edu.cn/v3/api/me/roles", cookies=cookies
+                "https://v.ruc.edu.cn/v3/api/me/roles",
+                cookies=cookies,
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+                },
             )
             role = response.json()["data"][-1]
             return f"你好, {role['departmentname']} {role['username']}"
@@ -431,6 +435,7 @@ def check_cookies(cookies, domain="v"):
                 headers={
                     "Accept": "application/json, text/plain, */*",
                     "TOKEN": cookies["token"],
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
                 },
                 json={"jczy013id": gen_semester_codes()},
             )
@@ -492,23 +497,27 @@ def update_other(browser=None, driver_path=None):
 
 
 def main():
-    usage = r"""Usage:
-    ruclogin [--username=<username>] [--password=<password>] [--browser=<browser>] [--driver=<driver_path>] [--reset] [--debug] [--no_interactive] [--silent]
-    
-Options:
-    --username=<username>   username
-    --password=<password>   password
-    --browser=<browser>     browser(Chrome/Edge)
-    --driver=<driver_path>  driver_path
-    --reset
-    --debug
-    """
-    args = docopt.docopt(usage)
-    if args["--reset"]:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--username", type=str, default=None)
+    parser.add_argument("--password", type=str, default=None)
+    parser.add_argument("--browser", type=str, default=None)
+    parser.add_argument("--driver", type=str, default=None)
+    parser.add_argument("--reset", action="store_true")
+    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--no_interactive", action="store_true")
+    parser.add_argument("--silent", action="store_true")
+    parser.add_argument("-V", action="store_true", help="Show paths.")
+    args = parser.parse_args()
+    if args.V:
+        print(f"配置文件路径：{INI_PATH}")
+        print(f"教务系统 cookies 缓存路径：{JW_COOKIES_PATH}")
+        print(f"信息门户 cookies 缓存路径：{V_COOKIES_PATH}")
+        return
+    if args.reset:
         update_username_and_password("2021201212", "ABC12345")
         update_other(browser="Chrome", driver_path="D:/Other/driver/chromedriver.exe")
         config.read(INI_PATH, encoding="utf-8")
-        if not args["--silent"]:
+        if not args.silent:
             print("Config {} updated:".format(INI_PATH))
             print(
                 "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}\n\tdriver_path: {}".format(
@@ -524,21 +533,19 @@ Options:
     restart = True
     retry = 0
     while restart:
-        username = args["--username"] or input("username, type enter to skip: ")
+        username = args.username or input("username, type enter to skip: ")
         if PASSWORD_INPUT:
-            password = args["--password"] or getpass("password, type enter to skip: ")
+            password = args.password or getpass("password, type enter to skip: ")
         else:
-            password = args["--password"] or input("password, type enter to skip: ")
-        browser = args["--browser"] or input(
-            "browser(Chrome/Edge), type enter to skip: "
-        )
+            password = args.password or input("password, type enter to skip: ")
+        browser = args.browser or input("browser(Chrome/Edge), type enter to skip: ")
         browser = browser.capitalize()
         if browser not in ["Chrome", "Edge", ""]:
             raise ValueError("browser must be Chrome or Edge")
-        driver_path = args["--driver"] or input("driver_path, type enter to skip: ")
+        driver_path = args.driver or input("driver_path, type enter to skip: ")
         update_username_and_password(username, password)
         update_other(browser, driver_path)
-        if args["--no_interactive"]:
+        if args.no_interactive:
             isTest = "y"
         else:
             print("\nConfig {} updated:".format(INI_PATH))
@@ -557,11 +564,11 @@ Options:
             print("\n")
             isTest = input("Test login? (Y/n): ")
         if isTest.lower() in ["y", "yes", ""]:
-            if not args["--silent"]:
+            if not args.silent:
                 print("Testing, please be patient and wait...")
             try:
                 init_tic = timer()
-                driver_init(args["--debug"])
+                driver_init(args.debug)
                 init_toc = timer()
                 v_get_tic = timer()
                 v_cookies = get_cookies(domain="v", cache=False)
@@ -569,7 +576,7 @@ Options:
                 v_check_tic = timer()
                 v_msg = check_cookies(v_cookies, domain="v")
                 if not v_msg:
-                    if not args["--silent"]:
+                    if not args.silent:
                         print(v_cookies)
                     raise RuntimeError("v.ruc.edu.cn cookies are invalid")
                 v_check_toc = timer()
@@ -579,11 +586,11 @@ Options:
                 jw_check_tic = timer()
                 jw_msg = check_cookies(jw_cookies, domain="jw")
                 if not jw_msg:
-                    if not args["--silent"]:
+                    if not args.silent:
                         print(jw_cookies)
                     raise RuntimeError("jw.ruc.edu.cn cookies are invalid")
                 jw_check_toc = timer()
-                if not args["--silent"]:
+                if not args.silent:
                     print(v_msg, "from v.ruc.edu.cn")
                     print(jw_msg, "from jw.ruc.edu.cn")
                 print("driver init time: {:.3f}s".format(init_toc - init_tic))
@@ -599,9 +606,9 @@ Options:
                 )
                 break
             except Exception as e:
-                if not args["--silent"]:
+                if not args.silent:
                     print(e)
-                if args["--no_interactive"]:
+                if args.no_interactive:
                     retry += 1
                     print(f"retry {retry} times")
                     if retry == 5:
@@ -615,8 +622,12 @@ Options:
 
 if __name__ == "__main__":
     main()
-    # domain = "v"
-    # cookies = get_cookies(cache=False, domain=domain)
-    # print(cookies)
-    # success = check_cookies(cookies, domain=domain)
-    # print(success)
+    # v_cookies = get_cookies(cache=False, domain="v")
+    # print(v_cookies)
+    # v_success = check_cookies(v_cookies, domain="v")
+    # print(v_success)
+
+    # jw_cookies = get_cookies(cache=False, domain="jw")
+    # print(jw_cookies)
+    # jw_success = check_cookies(jw_cookies, domain="jw")
+    # print(jw_success)
