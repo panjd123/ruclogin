@@ -3,7 +3,9 @@
 [![PyPI Downloads](https://img.shields.io/pypi/dm/ruclogin.svg?label=PyPI%20downloads)](
 https://pypi.org/project/ruclogin/) [![GitHub Repo stars](https://img.shields.io/github/stars/panjd123/ruclogin?label=Github%20stars)](https://github.com/panjd123/ruclogin)
 
-ruclogin 可以帮助你快速地获取和检查 [v.ruc.edu.cn](v.ruc.edu.cn) (and [jw.ruc.edu.cn](jw.ruc.edu.cn)) 的 cookies，使用 selenium 和 requests。可能的用途包括爬虫，抢课等。
+ruclogin 可以帮助你快速地获取和检查 [v.ruc.edu.cn](v.ruc.edu.cn) (and [jw.ruc.edu.cn](jw.ruc.edu.cn)) 的 cookies，基于 selenium 和 requests。
+
+> 本项目仅供学习交流使用，不得用于其他场合。使用本软件的风险由用户自行承担，我们不对因使用或依赖本软件所导致的任何直接或间接损失承担责任。
 
 ## Simple Example
 
