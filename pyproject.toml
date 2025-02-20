@@ -11,18 +11,15 @@ dynamic = ["version"]
 description = "Login to *.ruc.edu.cn, get cookies."
 readme = "README.md"
 requires-python = "<3.13"
-authors = [
-    { name = "panjd123", email = "xm.jarden@gmail.com" }
-]
-license = {file = "LICENSE"}
+authors = [{ name = "panjd123", email = "xm.jarden@gmail.com" }]
+license = { file = "LICENSE" }
 dependencies = [
     "requests",
     "selenium",
     "selenium-wire",
     "webdriver_manager",
     "ddddocr>=1.5.6",
-    "docopt",
-    "blinker==1.7.0"
+    "blinker==1.7.0",
 ]
 
 [project.urls]

@@ -9,6 +9,7 @@ from getpass import getpass
 from time import sleep
 from timeit import default_timer as timer
 import argparse
+import logging
 
 import ddddocr
 import onnxruntime
@@ -39,6 +40,26 @@ loginer_instance = None
 config = configparser.ConfigParser()
 
 onnxruntime.set_default_logger_severity(3)
+
+PRIVATE_INFO = 15
+logging.addLevelName(PRIVATE_INFO, "PRIVATE_INFO")
+
+
+def private_info(self, message, *args, **kws):
+    if self.isEnabledFor(PRIVATE_INFO):
+        self._log(PRIVATE_INFO, message, args, **kws)
+
+
+logging.Logger.private_info = private_info
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+console_hd = logging.StreamHandler()
+console_hd.setLevel(logging.WARNING)
+# console_hd.setFormatter(
+#     logging.Formatter("%(asctime)s - %(levelname)s- %(module)s - %(message)s")
+# )
+console_hd.setFormatter(logging.Formatter("%(message)s"))
+logger.addHandler(console_hd)
 
 
 def gen_semester_codes():
@@ -97,7 +118,7 @@ class RUC_LOGIN:
     lst_img: bytes
     lst_status: tuple
 
-    def __init__(self, debug=False) -> None:
+    def __init__(self, debug=False, cmd=False) -> None:
         self.date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         self.ocr = ddddocr.DdddOcr(show_ad=False)
         global config
@@ -123,34 +144,59 @@ class RUC_LOGIN:
         if browser == "Chrome":
             options = get_options(webdriver.ChromeOptions())
             try:
-                self.driver = webdriver.Chrome(
-                    options=options,
-                )
-            except Exception as e:
-                print(f"Warning: Failed to initialize Chrome driver automatically: {e}")
-                driver_path = config["base"]["driver"]
-                if not osp.exists(driver_path):
-                    raise RuntimeError(f"driver {driver_path} not found")
-                self.driver = webdriver.Chrome(
-                    options=options,
-                    service=ChromeService(executable_path=driver_path),
-                )
+                self.driver = webdriver.Chrome(options=options)
+                logger.info("Using Chrome from PATH")
+            except Exception as e1:
+                try:
+                    logger.info(f"Failed to find Chrome in the PATH: {e1}")
+                    self.driver = webdriver.Chrome(
+                        options=options,
+                        service=ChromeService(ChromeDriverManager().install()),
+                    )
+                    logger.info("Using Chrome driver installed by webdriver_manager")
+                except Exception as e2:
+                    logger.info(
+                        f"Failed to download Chrome driver automatically using webdriver_manager: {e2}"
+                    )
+                    driver_path = config["base"]["driver"]
+                    if not osp.exists(driver_path):
+                        logger.error(
+                            f"Driver '{driver_path}' not found; attempts to locate Chrome in the PATH and download via webdriver_manager also failed"
+                        )
+                        raise RuntimeError(f"driver {driver_path} not found")
+                    self.driver = webdriver.Chrome(
+                        options=options,
+                        service=ChromeService(executable_path=driver_path),
+                    )
+                    logger.info(f"Using Chrome driver from {driver_path}")
         elif browser == "Edge":
             options = get_options(webdriver.EdgeOptions())
             try:
-                self.driver = webdriver.Edge(
-                    options=options,
-                    service=EdgeService(EdgeChromiumDriverManager().install()),
-                )
-            except Exception as e:
-                print(f"Warning: Failed to download Edge driver automatically: {e}")
-                driver_path = config["base"]["driver"]
-                if not osp.exists(driver_path):
-                    raise RuntimeError(f"driver {driver_path} not found")
-                self.driver = webdriver.Edge(
-                    options=options,
-                    service=EdgeService(executable_path=driver_path),
-                )
+                self.driver = webdriver.Edge(options=options)
+                logger.info("Using Edge from PATH")
+            except Exception as e1:
+                try:
+                    logger.info(f"Failed to find Edge in the PATH: {e1}")
+                    self.driver = webdriver.Edge(
+                        options=options,
+                        service=EdgeService(EdgeChromiumDriverManager().install()),
+                    )
+                    logger.info("Using Edge driver installed by webdriver_manager")
+                except Exception as e2:
+                    logger.info(
+                        f"Failed to download Edge driver automatically using webdriver_manager: {e2}"
+                    )
+                    driver_path = config["base"]["driver"]
+                    if not osp.exists(driver_path):
+                        logger.error(
+                            f"Driver '{driver_path}' not found; attempts to locate Edge in the PATH and download via webdriver_manager also failed"
+                        )
+                        raise RuntimeError(f"driver {driver_path} not found")
+                    self.driver = webdriver.Edge(
+                        options=options,
+                        service=EdgeService(executable_path=driver_path),
+                    )
+                    logger.info(f"Using Edge driver from {driver_path}")
         else:
             raise ValueError("browser must be Chrome or Edge")
 
@@ -353,10 +399,10 @@ class RUC_LOGIN:
         return
 
 
-def driver_init(debug=False):
+def driver_init(debug=False, cmd=False):
     global loginer_instance
     if loginer_instance is None:
-        loginer_instance = RUC_LOGIN(debug=debug)
+        loginer_instance = RUC_LOGIN(debug=debug, cmd=cmd)
 
 
 def get_cookies(cache=True, domain="v", retry=3, username="", password="") -> dict:
@@ -393,7 +439,7 @@ def get_cookies(cache=True, domain="v", retry=3, username="", password="") -> di
         if not cookies:
             raise RuntimeError("Login failed, cookies are empty, please try again")
     except RuntimeError as e:
-        print(f"retry {retry}:", e)
+        logger.warning(f"retry {retry}: {e}")
         if retry == 1:
             raise e
         else:
@@ -505,28 +551,31 @@ def main():
     parser.add_argument("--reset", action="store_true")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--no_interactive", action="store_true")
-    parser.add_argument("--silent", action="store_true")
+    parser.add_argument("--private", action="store_true")
     parser.add_argument("-V", action="store_true", help="Show paths.")
     args = parser.parse_args()
+    if args.private:
+        console_hd.setLevel(logging.INFO)
+    else:
+        console_hd.setLevel(PRIVATE_INFO)
     if args.V:
-        print(f"配置文件路径：{INI_PATH}")
-        print(f"教务系统 cookies 缓存路径：{JW_COOKIES_PATH}")
-        print(f"信息门户 cookies 缓存路径：{V_COOKIES_PATH}")
+        logger.info(f"配置文件路径：{INI_PATH}")
+        logger.info(f"教务系统 cookies 缓存路径：{JW_COOKIES_PATH}")
+        logger.info(f"信息门户 cookies 缓存路径：{V_COOKIES_PATH}")
         return
     if args.reset:
         update_username_and_password("2021201212", "ABC12345")
         update_other(browser="Chrome", driver_path="D:/Other/driver/chromedriver.exe")
         config.read(INI_PATH, encoding="utf-8")
-        if not args.silent:
-            print("Config {} updated:".format(INI_PATH))
-            print(
-                "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}\n\tdriver_path: {}".format(
-                    config["base"]["username"],
-                    config["base"]["password"],
-                    config["base"]["browser"],
-                    config["base"]["driver"],
-                )
+        logger.info("Config {} updated:".format(INI_PATH))
+        logger.private_info(
+            "\tusername: {}\n\tpassword: {}\n\tbrowser: {}\n\tdriver: {}".format(
+                config["base"]["username"],
+                config["base"]["password"],
+                config["base"]["browser"],
+                config["base"]["driver"],
             )
+        )
         assert not osp.exists(JW_COOKIES_PATH)
         assert not osp.exists(V_COOKIES_PATH)
         return
@@ -548,69 +597,76 @@ def main():
         if args.no_interactive:
             isTest = "y"
         else:
-            print("\nConfig {} updated:".format(INI_PATH))
+            logger.info("Config {} updated:".format(INI_PATH))
             password_display = (
                 repr(config["base"]["password"])[1:-1]  # 使用 repr() 并去掉引号
                 if not PASSWORD_INPUT
                 else "******"
             )
-            print(
-                "\tUsername: {}\n\tPassword: {}\n\tBrowser: {}".format(
+            logger.private_info(
+                "\tusername: {}\n\tpassword: {}\n\tbrowser: {}\n\tdriver: {}".format(
                     config["base"]["username"],
                     password_display,
                     config["base"]["browser"],
+                    config["base"]["driver"],
                 )
             )
-            print("\n")
-            isTest = input("Test login? (Y/n): ")
+            isTest = input("\nTest login? (Y/n): ")
         if isTest.lower() in ["y", "yes", ""]:
-            if not args.silent:
-                print("Testing, please be patient and wait...")
+            logger.info("Testing, please be patient and wait...")
             try:
                 init_tic = timer()
-                driver_init(args.debug)
+                driver_init(args.debug, True)
                 init_toc = timer()
+                logger.info("Driver init time: {:.3f}s".format(init_toc - init_tic))
                 v_get_tic = timer()
                 v_cookies = get_cookies(domain="v", cache=False)
                 v_get_toc = timer()
+                logger.info(
+                    "v.ruc.edu.cn get cookies time: {:.3f}s".format(
+                        v_get_toc - v_get_tic
+                    )
+                )
                 v_check_tic = timer()
                 v_msg = check_cookies(v_cookies, domain="v")
                 if not v_msg:
-                    if not args.silent:
-                        print(v_cookies)
+                    logger.error(f"v.ruc.edu.cn cookies are invalid")
+                    logger.private_info(f"v_cookies: {v_cookies}")
                     raise RuntimeError("v.ruc.edu.cn cookies are invalid")
                 v_check_toc = timer()
+                logger.private_info(v_msg + " from v.ruc.edu.cn")
+                logger.info(
+                    "v.ruc.edu.cn check cookies time: {:.3f}s".format(
+                        v_check_toc - v_check_tic
+                    )
+                )
                 jw_get_tic = timer()
                 jw_cookies = get_cookies(domain="jw", cache=False)
                 jw_get_toc = timer()
+                logger.info(
+                    "jw.ruc.edu.cn get cookies time: {:.3f}s".format(
+                        jw_get_toc - jw_get_tic
+                    )
+                )
                 jw_check_tic = timer()
                 jw_msg = check_cookies(jw_cookies, domain="jw")
                 if not jw_msg:
-                    if not args.silent:
-                        print(jw_cookies)
+                    logger.error(f"jw.ruc.edu.cn cookies are invalid: {jw_cookies}")
+                    logger.private_info(f"jw_cookies: {jw_cookies}")
                     raise RuntimeError("jw.ruc.edu.cn cookies are invalid")
                 jw_check_toc = timer()
-                if not args.silent:
-                    print(v_msg, "from v.ruc.edu.cn")
-                    print(jw_msg, "from jw.ruc.edu.cn")
-                print("driver init time: {:.3f}s".format(init_toc - init_tic))
-                print(
-                    "v.ruc.edu.cn get cookies time: {:.3f}s, check cookies time: {:.3f}s".format(
-                        v_get_toc - v_get_tic, v_check_toc - v_check_tic
-                    )
-                )
-                print(
-                    "jw.ruc.edu.cn get cookies time: {:.3f}s, check cookies time: {:.3f}s".format(
-                        jw_get_toc - jw_get_tic, jw_check_toc - jw_check_tic
+                logger.private_info(jw_msg + " from jw.ruc.edu.cn")
+                logger.info(
+                    "jw.ruc.edu.cn check cookies time: {:.3f}s".format(
+                        jw_check_toc - jw_check_tic
                     )
                 )
                 break
             except Exception as e:
-                if not args.silent:
-                    print(e)
+                logger.error(e)
                 if args.no_interactive:
                     retry += 1
-                    print(f"retry {retry} times")
+                    logger.info(f"retry {retry} times")
                     if retry == 5:
                         raise e
                 else:

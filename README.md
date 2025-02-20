@@ -140,6 +140,8 @@ fix: use downloaded driver and deal with special pswd, [#9](https://github.com/p
 
 增加了 `-V` 参数，可以查看安装路径，以及对应的配置文件路径。
 
+将 print 替换为 logging，增加了更多的日志输出。
+
 ### 0.3.2
 
 Quit driver in destructor of RUC_LOGIN, [#8](https://github.com/panjd123/ruclogin/pull/8). @[zhecfy](https://github.com/zhecfy)
