@@ -616,7 +616,7 @@ def main():
             logger.info("Testing, please be patient and wait...")
             try:
                 init_tic = timer()
-                driver_init(args.debug, True)
+                driver_init(args.debug)
                 init_toc = timer()
                 logger.info("Driver init time: {:.3f}s".format(init_toc - init_tic))
                 v_get_tic = timer()
