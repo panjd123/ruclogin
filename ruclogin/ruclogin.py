@@ -118,7 +118,7 @@ class RUC_LOGIN:
     lst_img: bytes
     lst_status: tuple
 
-    def __init__(self, debug=False, cmd=False) -> None:
+    def __init__(self, debug=False) -> None:
         self.date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         self.ocr = ddddocr.DdddOcr(show_ad=False)
         global config
@@ -399,10 +399,10 @@ class RUC_LOGIN:
         return
 
 
-def driver_init(debug=False, cmd=False):
+def driver_init(debug=False):
     global loginer_instance
     if loginer_instance is None:
-        loginer_instance = RUC_LOGIN(debug=debug, cmd=cmd)
+        loginer_instance = RUC_LOGIN(debug=debug)
 
 
 def get_cookies(cache=True, domain="v", retry=3, username="", password="") -> dict:
