@@ -36,4 +36,4 @@ jobs:
         pip install -e .
     - name: Run tests
       run: |
-        ruclogin --username ${{ secrets.USERNAME }} --password "${{ secrets.PASSWORD }}" --browser chrome --driver ${{ steps.setup_chrome.outputs.chromedriver-path }} --no_interactive --silent
+        ruclogin --username ${{ secrets.USERNAME }} --password "${{ secrets.PASSWORD }}" --browser chrome --driver ${{ steps.setup_chrome.outputs.chromedriver-path }} --no_interactive --private
